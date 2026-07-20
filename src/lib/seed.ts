@@ -12,11 +12,11 @@ const iso = (daysAgo: number, hour = 10) => {
 export const SESSION = '2025-2026';
 
 export const seedSettings: SchoolSettings = {
-  name: 'Shreeji international public school',
+  name: 'SHRIJI INTERNATIONAL PUBLIC SCHOOL',
   logo: '',
-  address: '124 Maple Avenue, Sector 12, New Delhi, 110085',
-  contact: '+91 98100 12345',
-  email: 'accounts@greenwood.edu.in',
+  address: 'Umarpani, Tendukheda, Narsinghpur, Madhya Pradesh, 487337',
+  contact: '+91 88391 94116, +91 77710 38522, ',
+  email: 'sipsnarsinghpur@gmail.com',
   upiId: 'greenwood@upi',
   qrImage: '',
   session: SESSION,
