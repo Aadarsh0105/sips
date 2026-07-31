@@ -1,9 +1,6 @@
-
-
-
-import React from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { Provider } from 'react-redux';
 import {
   LayoutDashboardIcon,
   UsersIcon,
@@ -32,6 +29,7 @@ import { ReceptionDashboard } from './pages/reception/ReceptionDashboard';
 import { StudentsPage } from './pages/shared/StudentsPage';
 import { FeeManagementPage } from './pages/shared/FeeManagementPage';
 import { PaymentHistoryPage } from './pages/shared/PaymentHistoryPage';
+import { store } from './app/store';
 
 const adminNav: NavItem[] = [
 { to: '/admin', label: 'Dashboard', icon: LayoutDashboardIcon, end: true },
@@ -52,18 +50,19 @@ const receptionNav: NavItem[] = [
 
 export function App() {
   return (
-    <ThemeProvider>
-      <DataProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<StudentPortal />} />
-              <Route path="/login" element={<Login />} />
+    <Provider store={store}>
+      <ThemeProvider>
+        <DataProvider>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<StudentPortal />} />
+                <Route path="/login" element={<Login />} />
 
               {/* Admin */}
               <Route
                 element={
-                <ProtectedRoute role="admin">
+                <ProtectedRoute role="ADMIN">
                     <DashboardLayout items={adminNav} roleLabel="Administrator" basePath="/admin" />
                   </ProtectedRoute>
                 }>
@@ -80,7 +79,7 @@ export function App() {
               {/* Receptionist */}
               <Route
                 element={
-                <ProtectedRoute role="receptionist">
+                <ProtectedRoute role="RECEPTIONIST">
                     <DashboardLayout
                     items={receptionNav}
                     roleLabel="Receptionist"
@@ -96,11 +95,12 @@ export function App() {
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-            <Toaster position="top-right" richColors closeButton />
-          </BrowserRouter>
-        </AuthProvider>
-      </DataProvider>
-    </ThemeProvider>);
+              </Routes>
+              <Toaster position="top-right" richColors closeButton />
+            </BrowserRouter>
+          </AuthProvider>
+        </DataProvider>
+      </ThemeProvider>
+    </Provider>);
 
 }

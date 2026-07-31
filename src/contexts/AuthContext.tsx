@@ -26,6 +26,7 @@ interface AuthCtx {
 
 const Ctx = createContext<AuthCtx | null>(null);
 const SESSION_MINUTES = 60;
+const SESSION_KEY = 'authSession';
 
 // Simulated JWT (base64 payload) purely for realism in this frontend-only build.
 function makeToken(user: AuthUser, exp: number): string {
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: {children: React.ReactNode;}) {
   const logout = useCallback((reason?: string) => {
     clearTimer();
     localStorage.removeItem(store.keys.auth);
+    localStorage.removeItem(SESSION_KEY);
     setUser(null);
     if (reason) {
       try {
@@ -77,14 +79,19 @@ export function AuthProvider({ children }: {children: React.ReactNode;}) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(store.keys.auth);
+      const raw = localStorage.getItem(SESSION_KEY) ?? localStorage.getItem(store.keys.auth);
       if (raw) {
         const session = JSON.parse(raw) as Session;
-        if (session.exp > Date.now()) {
-          setUser(session.user);
-          scheduleExpiry(session.exp);
+        const expiresAt = session.exp ?? Date.now() + SESSION_MINUTES * 60 * 1000;
+        if (expiresAt > Date.now()) {
+          setUser({
+            ...session.user,
+            role: String(session.user.role).toLowerCase() as Role
+          });
+          scheduleExpiry(expiresAt);
         } else {
           localStorage.removeItem(store.keys.auth);
+          localStorage.removeItem(SESSION_KEY);
         }
       }
     } catch {
@@ -112,6 +119,7 @@ export function AuthProvider({ children }: {children: React.ReactNode;}) {
     const exp = Date.now() + SESSION_MINUTES * 60 * 1000;
     const session: Session = { token: makeToken(authUser, exp), user: authUser, exp };
     localStorage.setItem(store.keys.auth, JSON.stringify(session));
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     setUser(authUser);
     scheduleExpiry(exp);
     return { ok: true, role: found.role };

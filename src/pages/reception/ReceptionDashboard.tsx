@@ -32,7 +32,7 @@ import { StudentDetailModal } from '../../components/students/StudentDetailModal
 import { PaymentModal } from '../../components/shared/PaymentModal';
 import { ReceiptModal } from '../../components/shared/ReceiptModal';
 import { useData, deriveFee } from '../../contexts/DataContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAppSelector } from '../../hooks/useAppSelector';
 import {
   classNamesFor,
   formatCurrency,
@@ -44,7 +44,7 @@ import type { Payment, Student } from '../../lib/types';
 
 export function ReceptionDashboard() {
   const { students, payments } = useData();
-  const { user } = useAuth();
+  const { user } = useAppSelector((state) => state.auth);
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [detail, setDetail] = useState<Student | null>(null);

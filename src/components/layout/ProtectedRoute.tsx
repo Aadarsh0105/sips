@@ -3,8 +3,8 @@
 
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 import type { Role } from '../../lib/types';
+import { useAppSelector } from '../../hooks/useAppSelector';
 
 export function ProtectedRoute({
   role,
@@ -13,8 +13,10 @@ export function ProtectedRoute({
 
 
 }: {role?: Role;children: React.ReactNode;}) {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAppSelector((state) => state.auth);
   const location = useLocation();
+  const currentRole = user?.role?.toLowerCase() as Role | undefined;
+  const requiredRole = role?.toLowerCase() as Role | undefined;
 
   if (loading) {
     return (
@@ -28,8 +30,8 @@ export function ProtectedRoute({
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (role && user.role !== role) {
-    return <Navigate to={user.role === 'admin' ? '/admin' : '/reception'} replace />;
+  if (requiredRole && currentRole !== requiredRole) {
+    return <Navigate to={currentRole === 'ADMIN' ? '/admin' : '/reception'} replace />;
   }
 
   return <>{children}</>;

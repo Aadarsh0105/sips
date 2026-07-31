@@ -1,14 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
 import React, { useEffect, useState } from 'react';
 import {
   KeyRoundIcon,
@@ -43,7 +32,7 @@ const empty: FormState = { name: '', username: '', email: '', mobile: '', passwo
 
 export function ReceptionistsPage() {
   const { users, addUser, updateUser, deleteUser } = useData();
-  const receptionists = users.filter((u) => u.role === 'receptionist');
+  const receptionists = users.filter((u) => u.role === 'RECEPTIONIST');
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<User | null>(null);
@@ -93,7 +82,7 @@ export function ReceptionistsPage() {
         email: form.email,
         mobile: form.mobile,
         password: form.password,
-        role: 'receptionist',
+        role: 'RECEPTIONIST',
         status: 'active'
       });
       toast.success('Receptionist created.');

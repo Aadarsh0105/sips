@@ -12,8 +12,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, type NavItem } from './Sidebar';
 import { GlobalSearch } from './GlobalSearch';
 import { NotificationsMenu } from './NotificationsMenu';
-import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAppDispatch } from '../../hooks/useAppDispatch';
+import { useAppSelector } from '../../hooks/useAppSelector';
+import { logout } from '../../features/auth/authSlice';
 
 export function DashboardLayout({
   items,
@@ -26,7 +28,8 @@ export function DashboardLayout({
 
 
 }: {items: NavItem[];roleLabel: string;basePath: string;allowSearch?: boolean;}) {
-  const { user, logout } = useAuth();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -45,7 +48,7 @@ export function DashboardLayout({
   }, [user, navigate]);
 
   const handleLogout = () => {
-    logout();
+    dispatch(logout());
     toast.success('Signed out successfully.');
     navigate('/login', { replace: true });
   };

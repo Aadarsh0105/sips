@@ -1,13 +1,4 @@
-
-
-
-
-
-
-
-
-
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   UsersIcon,
   UserCogIcon,
@@ -28,13 +19,13 @@ import {
   RevenueChart } from
 '../../components/dashboard/Charts';
 import { useData } from '../../contexts/DataContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAppSelector } from '../../hooks/useAppSelector';
 import { computeMetrics } from '../../lib/analytics';
 import { formatCurrency, formatDate, formatTime } from '../../lib/utils';
 
 export function AdminDashboard() {
   const { students, payments, users, settings } = useData();
-  const { user } = useAuth();
+  const { user } = useAppSelector((state) => state.auth);
   const m = useMemo(() => computeMetrics(students, payments, users), [students, payments, users]);
 
   const recent = useMemo(
