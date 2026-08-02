@@ -8,4 +8,21 @@ const api = axios.create({
   },
 });
 
+api.interceptors.request.use((config) => {
+  try {
+    const sessionRaw = localStorage.getItem("authSession");
+    if (sessionRaw) {
+      const session = JSON.parse(sessionRaw) as { token?: string };
+      if (session.token) {
+        config.headers = config.headers ?? {};
+        config.headers.Authorization = `Bearer ${session.token}`;
+      }
+    }
+  } catch {
+    // Ignore malformed session data and send the request without auth.
+  }
+
+  return config;
+});
+
 export default api;

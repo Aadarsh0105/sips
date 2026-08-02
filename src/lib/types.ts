@@ -15,7 +15,7 @@ export interface User {
 }
 
 export type FeeStatus = 'pending' | 'partial' | 'paid';
-export type Gender = 'male' | 'female' | 'other';
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER';
 
 export interface Student {
   id: string; // Auto generated Student ID e.g. STU-2026-0001
@@ -33,6 +33,8 @@ export interface Student {
   address: string;
   email: string;
   admissionDate: string;
+  monthlyFee?: number;
+  openingDue?: number;
   session: string;
   totalFee: number;
   discount: number;

@@ -1,26 +1,15 @@
-
-
-
-
-
-
-
-
-
-
-
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  EyeIcon,
-  PencilIcon,
+  MoreVerticalIcon,
   PlusIcon,
   SearchIcon,
-  Trash2Icon,
   UsersIcon,
+  EyeIcon,
   WalletIcon,
-  DownloadIcon } from
-'lucide-react';
+  PencilIcon,
+  Trash2Icon,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card } from '../../components/ui/Card';
@@ -34,98 +23,104 @@ import { StudentDetailModal } from '../../components/students/StudentDetailModal
 import { PaymentModal } from '../../components/shared/PaymentModal';
 import { ReceiptModal } from '../../components/shared/ReceiptModal';
 import { useData, deriveFee } from '../../contexts/DataContext';
+import { useAppDispatch } from '../../hooks/useAppDispatch';
+import { useAppSelector } from '../../hooks/useAppSelector';
 import {
-  classNamesFor,
-  formatCurrency,
-  statusLabel } from
-'../../lib/utils';
+  deleteStudent as deleteStudentApi,
+  fetchStudentById,
+  fetchStudents,
+  type StudentRecord,
+} from '../../features/students/studentsSlice';
+import { formatCurrency, statusLabel } from '../../lib/utils';
 import { exportCSV } from '../../lib/export';
-import type { Payment, Student } from '../../lib/types';
+import type { Payment } from '../../lib/types';
 
-const PAGE_SIZE = 8;
+const DEFAULT_PAGE_SIZE = 8;
 
-export function StudentsPage({ canManage }: {canManage: boolean;}) {
-  const { students, payments, deleteStudent } = useData();
+export function StudentsPage({ canManage }: { canManage: boolean }) {
+  const dispatch = useAppDispatch();
+  const { payments } = useData();
+  const students = useAppSelector((state) => state.students.items);
+  const loading = useAppSelector((state) => state.students.loading);
   const [params, setParams] = useSearchParams();
 
   const [query, setQuery] = useState('');
   const [classFilter, setClassFilter] = useState('all');
-  const [sessionFilter, setSessionFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<Student | null>(null);
-  const [detail, setDetail] = useState<Student | null>(null);
-  const [paying, setPaying] = useState<Student | null>(null);
+  const [editing, setEditing] = useState<StudentRecord | null>(null);
+  const [detail, setDetail] = useState<StudentRecord | null>(null);
+  const [paying, setPaying] = useState<StudentRecord | null>(null);
   const [receipt, setReceipt] = useState<Payment | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<StudentRecord | null>(null);
 
   const classes = useMemo(
     () => Array.from(new Set(students.map((s) => s.className))),
     [students]
   );
-  const sessions = useMemo(
-    () => Array.from(new Set(students.map((s) => s.session))),
-    [students]
-  );
 
-  // deep link focus from global search
+  useEffect(() => {
+    void dispatch(fetchStudents());
+  }, [dispatch]);
+
   useEffect(() => {
     const focus = params.get('focus');
     if (focus) {
-      const s = students.find((x) => x.id === focus);
-      if (s) {
-        setDetail(s);
-        setQuery(s.id);
+      const student = students.find((item) => item._id === focus || item.studentId === focus);
+      if (student) {
+        setDetail(student);
+        setQuery(student.studentId);
       }
       params.delete('focus');
       setParams(params, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [students]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return students.filter((s) => {
-      const fee = deriveFee(s, payments);
+    return students.filter((student) => {
       const matchesQuery =
-      !q ||
-      s.name.toLowerCase().includes(q) ||
-      s.id.toLowerCase().includes(q) ||
-      s.mobile.toLowerCase().includes(q) ||
-      s.parentMobile.toLowerCase().includes(q) ||
-      s.admissionNumber.toLowerCase().includes(q);
-      const matchesClass = classFilter === 'all' || s.className === classFilter;
-      const matchesSession = sessionFilter === 'all' || s.session === sessionFilter;
-      const matchesStatus =
-      statusFilter === 'all' ||
-      statusFilter === 'paid' && fee.status === 'paid' ||
-      statusFilter === 'pending' && fee.status !== 'paid';
-      return matchesQuery && matchesClass && matchesSession && matchesStatus;
+        !q ||
+        student.name.toLowerCase().includes(q) ||
+        student.studentId.toLowerCase().includes(q) ||
+        student.mobile.toLowerCase().includes(q) ||
+        student.admissionNo.toLowerCase().includes(q);
+      const matchesClass = classFilter === 'all' || student.className === classFilter;
+      return matchesQuery && matchesClass;
     });
-  }, [students, payments, query, classFilter, sessionFilter, statusFilter]);
+  }, [students, payments, query, classFilter]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const current = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const current = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  useEffect(() => setPage(1), [query, classFilter, sessionFilter, statusFilter]);
+  useEffect(() => setPage(1), [query, classFilter, pageSize]);
+
+  useEffect(() => {
+    if (!detail) return;
+    void dispatch(fetchStudentById(detail._id))
+      .unwrap()
+      .then((student) => setDetail(student))
+      .catch(() => undefined);
+  }, [dispatch, detail?._id]);
 
   const handleExport = () => {
     exportCSV(
       'students',
-      filtered.map((s) => {
-        const fee = deriveFee(s, payments);
+      filtered.map((student) => {
+        const fee = deriveFee(toLegacyStudent(student), payments);
         return {
-          StudentID: s.id,
-          Admission: s.admissionNumber,
-          Name: s.name,
-          Class: `${s.className}-${s.section}`,
-          Mobile: s.mobile,
+          StudentID: student.studentId,
+          Admission: student.admissionNo,
+          Name: student.name,
+          Class: `${student.className}-${student.section}`,
+          Mobile: student.mobile,
           TotalFee: fee.totalFee,
           Paid: fee.paid,
           Remaining: fee.remaining,
-          Status: statusLabel(fee.status)
+          Status: statusLabel(fee.status),
         };
       })
     );
@@ -138,220 +133,257 @@ export function StudentsPage({ canManage }: {canManage: boolean;}) {
         title="Students"
         subtitle={`${students.length} students enrolled`}
         action={
-        <>
-            <Button variant="outline" onClick={handleExport}>
+          <>
+            {/* <Button variant="outline" onClick={handleExport}>
               <DownloadIcon className="h-4 w-4" /> Export
-            </Button>
-            {canManage &&
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}>
-            
+            </Button> */}
+            {canManage ? (
+              <Button
+                onClick={() => {
+                  setEditing(null);
+                  setFormOpen(true);
+                }}
+              >
                 <PlusIcon className="h-4 w-4" /> Add Student
               </Button>
-          }
+            ) : null}
           </>
-        } />
-      
+        }
+      />
 
-      {/* Filters */}
       <Card className="mb-4 p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="relative">
             <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
-              placeholder="Search ID, name, mobile, admission…"
+              placeholder="Search ID, name, mobile..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-9" />
-            
+              className="pl-9"
+            />
           </div>
           <Select value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
             <option value="all">All Classes</option>
-            {classes.map((c) =>
-            <option key={c} value={c}>
+            {classes.map((c) => (
+              <option key={c} value={c}>
                 Class {c}
               </option>
-            )}
+            ))}
           </Select>
-          <Select value={sessionFilter} onChange={(e) => setSessionFilter(e.target.value)}>
-            <option value="all">All Sessions</option>
-            {sessions.map((s) =>
-            <option key={s} value={s}>
-                {s}
-              </option>
-            )}
-          </Select>
-          <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="all">All Statuses</option>
-            <option value="paid">Paid</option>
-            <option value="pending">Pending / Partial</option>
+          <Select value={String(pageSize)} onChange={(e) => setPageSize(Number(e.target.value))}>
+            <option value="8">8 per page</option>
+            <option value="12">12 per page</option>
+            <option value="20">20 per page</option>
+            <option value="50">50 per page</option>
           </Select>
         </div>
       </Card>
 
-      {/* Table */}
       <Card>
-        {current.length === 0 ?
-        <EmptyState
-          icon={UsersIcon}
-          title="No students found"
-          description="Try adjusting your search or filters." /> :
-
-
-        <div className="overflow-x-auto">
+        {loading ? (
+          <p className="px-6 py-10 text-sm text-slate-500">Loading students...</p>
+        ) : current.length === 0 ? (
+          <EmptyState
+            icon={UsersIcon}
+            title="No students found"
+            description="Try adjusting your search or filters."
+          />
+        ) : (
+          <div className="">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
                 <tr>
                   <th className="px-6 py-3 font-semibold">Student</th>
+                  <th className="px-6 py-3 font-semibold">Admission No</th>
+                  <th className="px-6 py-3 font-semibold">Admission Date</th>
                   <th className="px-6 py-3 font-semibold">Class</th>
-                  <th className="px-6 py-3 font-semibold">Mobile</th>
-                  <th className="px-6 py-3 text-right font-semibold">Total</th>
-                  <th className="px-6 py-3 text-right font-semibold">Remaining</th>
-                  <th className="px-6 py-3 font-semibold">Status</th>
+                  <th className="px-6 py-3 text-right font-semibold">Monthly Fee</th>
+                  <th className="px-6 py-3 text-right font-semibold">Paid Fee</th>
+                  <th className="px-6 py-3 text-right font-semibold">Due Fee</th>
+                  <th className="px-6 py-3 text-right font-semibold">Total Fee</th>
                   <th className="px-6 py-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {current.map((s) => {
-                const fee = deriveFee(s, payments);
-                return (
-                  <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                {current.map((student) => {
+                  const legacy = toLegacyStudent(student);
+                  const fee = deriveFee(legacy, payments);
+                  return (
+                    <tr key={student._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-3">
-                          {s.photo ?
-                        <img src={s.photo} alt="" className="h-9 w-9 rounded-full object-cover" /> :
-
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-600 dark:bg-brand-500/15">
-                              {s.name[0]}
-                            </span>
-                        }
+                          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-600 dark:bg-brand-500/15">
+                            {student.name[0]}
+                          </span>
                           <div>
-                            <p className="font-semibold text-slate-800 dark:text-slate-100">
-                              {s.name}
-                            </p>
-                            <p className="text-xs text-slate-400">{s.id}</p>
+                            <p className="font-semibold text-slate-800 dark:text-slate-100">{student.name}</p>
+                            <p className="text-xs text-slate-400">{student.studentId}</p>
                           </div>
                         </div>
                       </td>
+                      <td className="px-6 py-3.5 text-slate-500">{student.admissionNo || '—'}</td>
                       <td className="px-6 py-3.5 text-slate-500">
-                        {s.className}-{s.section}
+                        {student.admissionDate ? student.admissionDate.slice(0, 10) : '—'}
                       </td>
-                      <td className="px-6 py-3.5 text-slate-500">{s.mobile}</td>
+                      <td className="px-6 py-3.5 text-slate-500">
+                        {student.className}-{student.section}
+                      </td>
                       <td className="px-6 py-3.5 text-right text-slate-600 dark:text-slate-300">
-                        {formatCurrency(fee.totalFee)}
+                        {formatCurrency(student.monthlyFee ?? 0)}
+                      </td>
+                      <td className="px-6 py-3.5 text-right text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(student.paidFee ?? fee.paid)}
                       </td>
                       <td className="px-6 py-3.5 text-right font-semibold text-slate-800 dark:text-slate-100">
-                        {formatCurrency(fee.remaining)}
+                        {formatCurrency(student.dueFee ?? fee.remaining)}
+                      </td>
+                      <td className="px-6 py-3.5 text-right text-slate-600 dark:text-slate-300">
+                        {formatCurrency(student.paidFee + student.dueFee)}
+                        {/* {formatCurrency(student.totalFee)} */}
                       </td>
                       <td className="px-6 py-3.5">
-                        <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${classNamesFor(fee.status)}`}>
-                        
-                          {statusLabel(fee.status)}
-                        </span>
+                        <ActionMenu
+                          canManage={canManage}
+                          canPay={(student.dueFee ?? fee.remaining) > 0}
+                          onView={() => setDetail(student)}
+                          onPay={() => setPaying(student)}
+                          onEdit={() => {
+                            setEditing(student);
+                            setFormOpen(true);
+                          }}
+                          onDelete={() => setDeleteTarget(student)}
+                        />
                       </td>
-                      <td className="px-6 py-3.5">
-                        <div className="flex items-center justify-end gap-1">
-                          <IconBtn label="View" onClick={() => setDetail(s)}>
-                            <EyeIcon className="h-4 w-4" />
-                          </IconBtn>
-                          {fee.remaining > 0 &&
-                        <IconBtn label="Accept payment" onClick={() => setPaying(s)}>
-                              <WalletIcon className="h-4 w-4" />
-                            </IconBtn>
-                        }
-                          {canManage &&
-                        <>
-                              <IconBtn
-                            label="Edit"
-                            onClick={() => {
-                              setEditing(s);
-                              setFormOpen(true);
-                            }}>
-                            
-                                <PencilIcon className="h-4 w-4" />
-                              </IconBtn>
-                              <IconBtn label="Delete" danger onClick={() => setDeleteTarget(s)}>
-                                <Trash2Icon className="h-4 w-4" />
-                              </IconBtn>
-                            </>
-                        }
-                        </div>
-                      </td>
-                    </tr>);
-
-              })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        }
+        )}
         <div className="border-t border-slate-100 dark:border-slate-800">
           <Pagination page={page} pageCount={pageCount} total={filtered.length} onPage={setPage} />
         </div>
       </Card>
 
-      {/* Modals */}
-      <StudentFormModal open={formOpen} onClose={() => setFormOpen(false)} editing={editing} />
+      <StudentFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        editing={editing as any}
+      />
       <StudentDetailModal
         student={detail}
         open={!!detail}
         onClose={() => setDetail(null)}
-        onPay={(s) => {
-          setDetail(null);
-          setPaying(s);
-        }}
-        onViewReceipt={(p) => setReceipt(p)} />
-      
+        onViewReceipt={(payment) => setReceipt(payment)}
+      />
       <PaymentModal
         student={paying}
         open={!!paying}
         onClose={() => setPaying(null)}
-        onDone={(p) => setReceipt(p)} />
-      
+        onDone={(payment) => setReceipt(payment)}
+      />
       <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => {
           if (deleteTarget) {
-            deleteStudent(deleteTarget.id);
+            void dispatch(deleteStudentApi(deleteTarget._id)).then(() => dispatch(fetchStudents()));
             toast.success('Student deleted.');
           }
         }}
         title="Delete student?"
         message={`This will permanently remove ${deleteTarget?.name} and all their payment records. This action cannot be undone.`}
-        confirmLabel="Delete Student" />
-      
-    </div>);
-
+        confirmLabel="Delete Student"
+      />
+    </div>
+  );
 }
 
-function IconBtn({
-  children,
-  label,
-  onClick,
-  danger
+function ActionMenu({
+  canManage,
+  canPay,
+  onView,
+  onPay,
+  onEdit,
+  onDelete,
+}: {
+  canManage: boolean;
+  canPay: boolean;
+  onView: () => void;
+  onPay: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
 
-
-
-
-
-}: {children: React.ReactNode;label: string;onClick: () => void;danger?: boolean;}) {
   return (
-    <button
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-      danger ?
-      'text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10' :
-      'text-slate-400 hover:bg-slate-100 hover:text-brand-600 dark:hover:bg-slate-800'}`
-      }>
-      
-      {children}
-    </button>);
+    <div className="relative flex justify-end">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-brand-600 dark:hover:bg-slate-800"
+        aria-label="Actions"
+      >
+        <MoreVerticalIcon className="h-4 w-4" />
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-10 z-20 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-700 shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+          <button
+            onClick={onView}
+            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+            <EyeIcon className="h-4 w-4 text-slate-500 dark:text-slate-300" /> View
+          </button>
+          {canPay ? (
+            <button
+              onClick={onPay}
+              className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+              <WalletIcon className="h-4 w-4 text-emerald-500" /> Pay Fee
+            </button>
+          ) : null}
+          {canManage ? (
+            <>
+              <button
+                onClick={onEdit}
+                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                <PencilIcon className="h-4 w-4 text-blue-500" /> Edit
+              </button>
+              <button
+                onClick={onDelete}
+                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-500/10">
+                <Trash2Icon className="h-4 w-4 text-rose-500" /> Delete
+              </button>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
+function toLegacyStudent(student: StudentRecord) {
+  return {
+    id: student._id,
+    admissionNumber: student.admissionNo,
+    name: student.name,
+    fatherName: student.fatherName,
+    motherName: student.motherName,
+    className: student.className,
+    section: student.section,
+    rollNumber: '',
+    gender: student.gender.toLowerCase() as any,
+    dob: student.dob,
+    mobile: student.mobile,
+    parentMobile: '',
+    address: student.address,
+    email: student.email,
+    admissionDate: student.admissionDate ?? '',
+    session: '',
+    totalFee: student.totalFee,
+    discount: 0,
+    fine: 0,
+    dueDate: '',
+    createdAt: student.createdAt,
+  };
 }

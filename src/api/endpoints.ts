@@ -3,11 +3,14 @@ export const API = {
 
   STUDENTS: "/api/students",
 
-  RECEPTIONISTS: "/receptionists",
+  RECEPTIONISTS: "/api/receptionist",
 
   FEES: "/fees",
+  FEES_COLLECT: "/api/fees/collect",
 
-  DASHBOARD: "/dashboard",
+  DASHBOARD_ADMIN: "/api/dashboard/admin",
+  DASHBOARD_MONTHLY_COLLECTION: "/api/dashboard/monthly-collection",
+  DASHBOARD_RECENT_TRANSACTIONS: "/api/dashboard/recent-transactions",
 
   INVOICES: "/invoice",
 };

@@ -31,7 +31,7 @@ export const seedUsers: User[] = [
   email: 'admin@greenwood.edu.in',
   mobile: '+91 98100 00001',
   password: 'admin123',
-  role: 'admin',
+  role: 'ADMIN',
   status: 'active',
   createdAt: iso(400)
 },
@@ -42,7 +42,7 @@ export const seedUsers: User[] = [
   email: 'priya@greenwood.edu.in',
   mobile: '+91 98100 00002',
   password: 'recept123',
-  role: 'receptionist',
+  role: 'RECEPTIONIST',
   status: 'active',
   createdAt: iso(200)
 },
@@ -53,7 +53,7 @@ export const seedUsers: User[] = [
   email: 'amit@greenwood.edu.in',
   mobile: '+91 98100 00003',
   password: 'recept123',
-  role: 'receptionist',
+  role: 'RECEPTIONIST',
   status: 'inactive',
   createdAt: iso(120)
 }];

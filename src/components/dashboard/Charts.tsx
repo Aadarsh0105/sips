@@ -161,6 +161,47 @@ export function PaymentStatusChart({
 
 }
 
+export function PaymentModeChart({ data }: { data: { name: string; value: number }[] }) {
+  const c = useChartColors();
+  const total = data.reduce((s, d) => s + d.value, 0);
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <PieChart>
+        <Pie
+          data={data}
+          dataKey="value"
+          nameKey="name"
+          innerRadius={62}
+          outerRadius={95}
+          paddingAngle={3}
+          stroke="none"
+        >
+          {data.map((_, i) => (
+            <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip
+          contentStyle={{
+            background: c.tooltipBg,
+            border: `1px solid ${c.tooltipBorder}`,
+            borderRadius: 8,
+            color: c.tooltipText,
+            fontSize: 12,
+          }}
+          formatter={(value: number, name: string) => [formatCurrency(value), name]}
+        />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <text x="50%" y="47%" textAnchor="middle" className="fill-slate-900 dark:fill-white" style={{ fontSize: 22, fontWeight: 800 }}>
+          {formatCurrency(total)}
+        </text>
+        <text x="50%" y="57%" textAnchor="middle" style={{ fontSize: 11, fill: c.axis }}>
+          Collected
+        </text>
+      </PieChart>
+    </ResponsiveContainer>
+  );
+}
+
 export function ClasswiseChart({ data }: {data: {className: string;amount: number;}[];}) {
   const c = useChartColors();
   return (
