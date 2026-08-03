@@ -1,14 +1,13 @@
-import React from "react";
 import { NavLink } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { XIcon, BoxIcon } from "lucide-react";
+import { XIcon } from "lucide-react";
 import { SchoolLogo } from "../shared/SchoolLogo";
 import { useData } from "../../contexts/DataContext";
 import { cn } from "../../lib/utils";
 export interface NavItem {
   to: string;
   label: string;
-  icon: BoxIcon;
+  icon: any;
   end?: boolean;
 }
 function NavList({

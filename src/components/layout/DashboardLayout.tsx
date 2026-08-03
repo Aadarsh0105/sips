@@ -117,7 +117,7 @@ export function DashboardLayout({
                       <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                         {user?.name}
                       </p>
-                      <p className="truncate text-xs text-slate-400">{user?.email}</p>
+                      {/* <p className="truncate text-xs text-slate-400">{user?.email}</p> */}
                     </div>
                     <button
                     onMouseDown={handleLogout}
