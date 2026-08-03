@@ -4,6 +4,7 @@ import studentSearchReducer from "../features/studentSearch/studentSearchSlice";
 import dashboardReducer from "../features/dashboard/dashboardSlice";
 import studentsReducer from "../features/students/studentsSlice";
 import receptionistsReducer from "../features/receptionists/receptionistsSlice";
+import feeStructuresReducer from "../features/feeStructures/feeStructuresSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     dashboard: dashboardReducer,
     students: studentsReducer,
     receptionists: receptionistsReducer,
+    feeStructures: feeStructuresReducer,
   },
 });
 

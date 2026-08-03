@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import { useState } from 'react';
 import { toast } from 'sonner';
 import api from '../../api/axios';
 import { API } from '../../api/endpoints';
@@ -24,7 +24,7 @@ export function PaymentModal({
   const dispatch = useAppDispatch();
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('cash');
-  const [remarks, setRemarks] = useState('July Fee');
+  const [remarks, setRemarks] = useState('');
 
   if (!student) return null;
   const paid = student.paidFee ?? 0;
@@ -34,7 +34,7 @@ export function PaymentModal({
   const reset = () => {
     setAmount('');
     setMethod('cash');
-    setRemarks('July Fee');
+    setRemarks('');
   };
 
   const submit = async (full: boolean) => {
@@ -90,7 +90,7 @@ export function PaymentModal({
         onClose();
       }}
       title="Accept Fee Payment"
-      subtitle={`${student.name} � ${student.studentId}`}
+      subtitle={`${student.name} · ${student.studentId}`}
       footer={
         <>
           <Button variant="outline" onClick={() => submit(true)} disabled={remaining <= 0}>
@@ -114,17 +114,15 @@ export function PaymentModal({
         </p>
       ) : (
         <div className="space-y-4">
-          <Field label="Amount" required>
-            <Input
-              type="number"
-              min={1}
-              max={remaining}
-              placeholder={`Up to ${remaining}`}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </Field>
           <div className="grid grid-cols-2 gap-4">
+            <Field label="Amount" required>
+              <Input
+                type="text"
+                placeholder={`Up to ${remaining}`}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </Field>
             <Field label="Payment Mode" required>
               <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
                 <option value="cash">Cash</option>
@@ -133,7 +131,6 @@ export function PaymentModal({
                 <option value="bank">Bank Transfer</option>
               </Select>
             </Field>
-            <div className="sm:col-span-1" />
           </div>
           <Field label="Remarks">
             <Textarea

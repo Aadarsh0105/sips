@@ -6,6 +6,7 @@ import {
   UsersIcon,
   UserCogIcon,
   WalletIcon,
+  Layers3Icon,
   FileBarChart2Icon,
   ReceiptIcon,
   SettingsIcon } from
@@ -23,6 +24,7 @@ import { StudentPortal } from './pages/StudentPortal';
 import { Login } from './pages/Login';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { ReceptionistsPage } from './pages/admin/ReceptionistsPage';
+import { FeeStructuresPage } from './pages/admin/FeeStructuresPage';
 import { ReportsPage } from './pages/admin/ReportsPage';
 import { SettingsPage } from './pages/admin/SettingsPage';
 import { ReceptionDashboard } from './pages/reception/ReceptionDashboard';
@@ -35,6 +37,7 @@ const adminNav: NavItem[] = [
 { to: '/admin', label: 'Dashboard', icon: LayoutDashboardIcon, end: true },
 { to: '/admin/students', label: 'Students', icon: UsersIcon },
 { to: '/admin/receptionists', label: 'Receptionists', icon: UserCogIcon },
+{ to: '/admin/fee-structures', label: 'Fee Structures', icon: Layers3Icon },
 { to: '/admin/fees', label: 'Fee Management', icon: WalletIcon },
 { to: '/admin/history', label: 'Payment History', icon: ReceiptIcon },
 { to: '/admin/reports', label: 'Reports', icon: FileBarChart2Icon },
@@ -70,6 +73,7 @@ export function App() {
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/students" element={<StudentsPage canManage />} />
                 <Route path="/admin/receptionists" element={<ReceptionistsPage />} />
+                <Route path="/admin/fee-structures" element={<FeeStructuresPage />} />
                 <Route path="/admin/fees" element={<FeeManagementPage />} />
                 <Route path="/admin/history" element={<PaymentHistoryPage />} />
                 <Route path="/admin/reports" element={<ReportsPage />} />

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   MoreVerticalIcon,
@@ -11,10 +11,13 @@ import {
   Trash2Icon,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import api from '../../api/axios';
+import { API } from '../../api/endpoints';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Input, Select } from '../../components/ui/Input';
+import { Field, Input, Select } from '../../components/ui/Input';
+import { Modal } from '../../components/ui/Modal';
 import { Pagination } from '../../components/ui/Pagination';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
@@ -25,6 +28,8 @@ import { ReceiptModal } from '../../components/shared/ReceiptModal';
 import { useData, deriveFee } from '../../contexts/DataContext';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import { useExclusiveMenu } from '../../hooks/useExclusiveMenu';
+import { CLASS_OPTIONS } from '../../lib/classes';
 import {
   deleteStudent as deleteStudentApi,
   fetchStudentById,
@@ -53,13 +58,12 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
   const [editing, setEditing] = useState<StudentRecord | null>(null);
   const [detail, setDetail] = useState<StudentRecord | null>(null);
   const [paying, setPaying] = useState<StudentRecord | null>(null);
+  const [feeTarget, setFeeTarget] = useState<StudentRecord | null>(null);
+  const [feeForm, setFeeForm] = useState({ examFee: 0, sportFee: 0, computerFee: 0 });
   const [receipt, setReceipt] = useState<Payment | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StudentRecord | null>(null);
 
-  const classes = useMemo(
-    () => Array.from(new Set(students.map((s) => s.className))),
-    [students]
-  );
+  const classes = CLASS_OPTIONS;
 
   useEffect(() => {
     void dispatch(fetchStudents());
@@ -165,8 +169,8 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
           <Select value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
             <option value="all">All Classes</option>
             {classes.map((c) => (
-              <option key={c} value={c}>
-                Class {c}
+              <option key={c.value} value={c.value}>
+                {c.label}
               </option>
             ))}
           </Select>
@@ -189,7 +193,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
             description="Try adjusting your search or filters."
           />
         ) : (
-          <div className="">
+          <div className="overflow-x-auto lg:overflow-visible">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
                 <tr>
@@ -247,6 +251,10 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
                           canPay={(student.dueFee ?? fee.remaining) > 0}
                           onView={() => setDetail(student)}
                           onPay={() => setPaying(student)}
+                          onFeeStructure={() => {
+                            setFeeTarget(student);
+                            setFeeForm({ examFee: 0, sportFee: 0, computerFee: 0 });
+                          }}
                           onEdit={() => {
                             setEditing(student);
                             setFormOpen(true);
@@ -283,6 +291,39 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
         onClose={() => setPaying(null)}
         onDone={(payment) => setReceipt(payment)}
       />
+      <Modal
+        open={!!feeTarget}
+        onClose={() => setFeeTarget(null)}
+        title="Student Fee Structure"
+        subtitle={feeTarget ? `${feeTarget.name} · ${feeTarget.studentId}` : ''}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setFeeTarget(null)}>Cancel</Button>
+            <Button
+              onClick={async () => {
+                if (!feeTarget) return;
+                await api.put(`${API.FEE_STRUCTURES}/student/${feeTarget.studentId}`, feeForm);
+                toast.success('Student fee structure updated.');
+                setFeeTarget(null);
+              }}
+            >
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Field label="Exam Fee">
+            <Input type="number" value={feeForm.examFee} onChange={(e) => setFeeForm((f) => ({ ...f, examFee: Number(e.target.value) }))} />
+          </Field>
+          <Field label="Sport Fee">
+            <Input type="number" value={feeForm.sportFee} onChange={(e) => setFeeForm((f) => ({ ...f, sportFee: Number(e.target.value) }))} />
+          </Field>
+          <Field label="Computer Fee">
+            <Input type="number" value={feeForm.computerFee} onChange={(e) => setFeeForm((f) => ({ ...f, computerFee: Number(e.target.value) }))} />
+          </Field>
+        </div>
+      </Modal>
       <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />
       <ConfirmDialog
         open={!!deleteTarget}
@@ -306,6 +347,7 @@ function ActionMenu({
   canPay,
   onView,
   onPay,
+  onFeeStructure,
   onEdit,
   onDelete,
 }: {
@@ -313,16 +355,17 @@ function ActionMenu({
   canPay: boolean;
   onView: () => void;
   onPay: () => void;
+  onFeeStructure: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const { rootRef, open, toggle, close } = useExclusiveMenu('students-action-menu');
 
   return (
-    <div className="relative flex justify-end">
+    <div ref={rootRef} className="relative flex justify-end">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={toggle}
         className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-brand-600 dark:hover:bg-slate-800"
         aria-label="Actions"
       >
@@ -332,25 +375,34 @@ function ActionMenu({
         <div className="absolute right-0 top-10 z-20 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-700 shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
           <button
             onClick={onView}
+            onMouseDown={close}
             className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
             <EyeIcon className="h-4 w-4 text-slate-500 dark:text-slate-300" /> View
           </button>
           {canPay ? (
             <button
               onClick={onPay}
+              onMouseDown={close}
               className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
               <WalletIcon className="h-4 w-4 text-emerald-500" /> Pay Fee
             </button>
           ) : null}
+          {/* <button
+            onClick={onFeeStructure}
+            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+            <PlusIcon className="h-4 w-4 text-violet-500" /> Fee Structure
+          </button> */}
           {canManage ? (
             <>
               <button
                 onClick={onEdit}
+                onMouseDown={close}
                 className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
                 <PencilIcon className="h-4 w-4 text-blue-500" /> Edit
               </button>
               <button
                 onClick={onDelete}
+                onMouseDown={close}
                 className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-500/10">
                 <Trash2Icon className="h-4 w-4 text-rose-500" /> Delete
               </button>

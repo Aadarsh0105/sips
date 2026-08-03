@@ -2,6 +2,7 @@ export const API = {
   LOGIN: "/api/auth/login",
 
   STUDENTS: "/api/students",
+  FEE_STRUCTURES: "/api/fee-structures",
 
   RECEPTIONISTS: "/api/receptionist",
 

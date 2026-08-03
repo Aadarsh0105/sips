@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
-  KeyRoundIcon,
+  EyeIcon,
   PencilIcon,
   PlusIcon,
-  PowerIcon,
   Trash2Icon,
   UserCogIcon,
   MoreVerticalIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import * as yup from 'yup';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -19,6 +19,7 @@ import { Field, Input } from '../../components/ui/Input';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
+import { useExclusiveMenu } from '../../hooks/useExclusiveMenu';
 import {
   createReceptionist,
   deleteReceptionist,
@@ -37,6 +38,17 @@ interface FormState {
 
 const empty: FormState = { name: '', email: '', mobile: '', password: '' };
 
+const schema = yup.object({
+  name: yup.string().required('Name is required'),
+  email: yup.string().required('Email is required').email('Enter a valid email address'),
+  mobile: yup.string().required('Mobile is required').matches(/^[0-9]{10}$/, 'Enter a valid 10-digit mobile number'),
+  password: yup.string().when('$editing', {
+    is: false,
+    then: (rule) => rule.required('Password is required'),
+    otherwise: (rule) => rule.notRequired(),
+  }),
+});
+
 export function ReceptionistsPage() {
   const dispatch = useAppDispatch();
   const receptionists = useAppSelector((state) => state.receptionists.items);
@@ -46,8 +58,8 @@ export function ReceptionistsPage() {
   const [editing, setEditing] = useState<ReceptionistRecord | null>(null);
   const [form, setForm] = useState<FormState>(empty);
   const [deleteTarget, setDeleteTarget] = useState<ReceptionistRecord | null>(null);
-  const [resetTarget, setResetTarget] = useState<ReceptionistRecord | null>(null);
-  const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormState, string>>>({});
 
   useEffect(() => {
     void dispatch(fetchReceptionists());
@@ -64,41 +76,51 @@ export function ReceptionistsPage() {
     } else {
       setForm(empty);
     }
+    setShowPassword(false);
+    setFormErrors({});
   }, [editing, formOpen]);
 
   const set = (key: keyof FormState, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
-  const submit = () => {
-    if (!form.name.trim() || !form.mobile.trim() || !form.email.trim()) {
-      return toast.error('Name, email and mobile are required.');
-    }
+  const submit = async () => {
+    try {
+      await schema.validate(form, { abortEarly: false, context: { editing: !!editing } });
+      setFormErrors({});
 
-    if (editing) {
-      void dispatch(
-        updateReceptionist({
-          id: editing._id,
-          payload: {
+      if (editing) {
+        void dispatch(
+          updateReceptionist({
+            id: editing._id,
+            payload: {
+              name: form.name,
+              email: form.email,
+              mobile: form.mobile,
+              ...(form.password ? { password: form.password } : {}),
+            },
+          })
+        ).then(() => dispatch(fetchReceptionists()));
+        toast.success('Receptionist updated.');
+      } else {
+        void dispatch(
+          createReceptionist({
             name: form.name,
             email: form.email,
             mobile: form.mobile,
-            ...(form.password ? { password: form.password } : {}),
-          },
-        })
-      ).then(() => dispatch(fetchReceptionists()));
-      toast.success('Receptionist updated.');
-    } else {
-      if (!form.password) return toast.error('Password is required for new receptionists.');
-      void dispatch(
-        createReceptionist({
-          name: form.name,
-          email: form.email,
-          mobile: form.mobile,
-          password: form.password,
-        })
-      ).then(() => dispatch(fetchReceptionists()));
-      toast.success('Receptionist created.');
+            password: form.password,
+          })
+        ).then(() => dispatch(fetchReceptionists()));
+        toast.success('Receptionist created.');
+      }
+      setFormOpen(false);
+    } catch (error: any) {
+      if (error?.inner) {
+        const nextErrors: Partial<Record<keyof FormState, string>> = {};
+        for (const item of error.inner) {
+          if (item.path) nextErrors[item.path as keyof FormState] = item.message;
+        }
+        setFormErrors(nextErrors);
+      }
     }
-    setFormOpen(false);
   };
 
   return (
@@ -128,7 +150,7 @@ export function ReceptionistsPage() {
             description="Create staff accounts to help collect fees."
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto lg:overflow-visible">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
                 <tr>
@@ -165,24 +187,7 @@ export function ReceptionistsPage() {
                         user={user}
                         onEdit={() => {
                           setEditing(user);
-                          setFormOpen(true);
-                        }}
-                        onToggle={() => {
-                          void dispatch(
-                            updateReceptionist({
-                              id: user._id,
-                              payload: {
-                                name: user.name,
-                                email: user.email,
-                                mobile: user.mobile,
-                              },
-                            })
-                          ).then(() => dispatch(fetchReceptionists()));
-                          toast.success(`${user.name} status updated.`);
-                        }}
-                        onReset={() => {
-                          setResetTarget(user);
-                          setNewPassword('');
+                        setFormOpen(true);
                         }}
                         onDelete={() => setDeleteTarget(user)}
                       />
@@ -211,63 +216,36 @@ export function ReceptionistsPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Full Name" required>
             <Input value={form.name} onChange={(e) => set('name', e.target.value)} />
+            {formErrors.name ? <p className="mt-1 text-xs text-rose-500">{formErrors.name}</p> : null}
           </Field>
           <Field label="Email" required>
             <Input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
+            {formErrors.email ? <p className="mt-1 text-xs text-rose-500">{formErrors.email}</p> : null}
           </Field>
           <Field label="Mobile" required>
             <Input value={form.mobile} onChange={(e) => set('mobile', e.target.value)} />
+            {formErrors.mobile ? <p className="mt-1 text-xs text-rose-500">{formErrors.mobile}</p> : null}
           </Field>
-          <Field label={editing ? 'New Password (optional)' : 'Password'} required={!editing} className="sm:col-span-2">
-            <Input
-              type="password"
-              placeholder={editing ? 'Leave blank to keep current' : 'Set a password'}
-              value={form.password}
-              onChange={(e) => set('password', e.target.value)}
-            />
+          <Field label={editing ? 'New Password (optional)' : 'Password'} required={!editing}>
+            <div className="relative">
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                placeholder={editing ? 'Leave blank to keep current' : 'Set a password'}
+                value={form.password}
+                onChange={(e) => set('password', e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 hover:text-slate-600"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                <EyeIcon className="h-4 w-4" />
+              </button>
+            </div>
+            {formErrors.password ? <p className="mt-1 text-xs text-rose-500">{formErrors.password}</p> : null}
           </Field>
         </div>
-      </Modal>
-
-      <Modal
-        open={!!resetTarget}
-        onClose={() => setResetTarget(null)}
-        title="Reset Password"
-        subtitle={resetTarget?.name}
-        size="sm"
-        footer={
-          <>
-            <Button variant="outline" onClick={() => setResetTarget(null)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (!newPassword) return toast.error('Enter a new password.');
-                if (resetTarget) {
-                  void dispatch(
-                    updateReceptionist({
-                      id: resetTarget._id,
-                      payload: {
-                        name: resetTarget.name,
-                        email: resetTarget.email,
-                        mobile: resetTarget.mobile,
-                        password: newPassword,
-                      },
-                    })
-                  ).then(() => dispatch(fetchReceptionists()));
-                }
-                toast.success('Password reset successfully.');
-                setResetTarget(null);
-              }}
-            >
-              Reset Password
-            </Button>
-          </>
-        }
-      >
-        <Field label="New Password" required>
-          <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-        </Field>
       </Modal>
 
       <ConfirmDialog
@@ -290,23 +268,19 @@ export function ReceptionistsPage() {
 function ReceptionistMenu({
   user,
   onEdit,
-  onToggle,
-  onReset,
   onDelete,
 }: {
   user: ReceptionistRecord;
   onEdit: () => void;
-  onToggle: () => void;
-  onReset: () => void;
   onDelete: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const { rootRef, open, toggle, close } = useExclusiveMenu('receptionists-action-menu');
 
   return (
-    <div className="relative flex justify-end">
+    <div ref={rootRef} className="relative flex justify-end">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={toggle}
         className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-brand-600 dark:hover:bg-slate-800"
         aria-label="Actions"
       >
@@ -314,19 +288,23 @@ function ReceptionistMenu({
       </button>
       {open ? (
         <div className="absolute right-0 top-10 z-20 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-700 shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
-          <button onClick={onToggle} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
-            <PowerIcon className="h-4 w-4 text-violet-500" />
-            {user.isActive ? 'Deactivate' : 'Activate'}
-          </button>
-          <button onClick={onReset} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
-            <KeyRoundIcon className="h-4 w-4 text-amber-500" />
-            Reset password
-          </button>
-          <button onClick={onEdit} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+          <button
+            onClick={() => {
+              close();
+              onEdit();
+            }}
+            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
             <PencilIcon className="h-4 w-4 text-blue-500" />
             Edit
           </button>
-          <button onClick={onDelete} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-500/10">
+          <button
+            onClick={() => {
+              close();
+              onDelete();
+            }}
+            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-500/10"
+          >
             <Trash2Icon className="h-4 w-4 text-rose-500" />
             Delete
           </button>
