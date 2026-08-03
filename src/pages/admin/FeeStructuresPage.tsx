@@ -77,6 +77,7 @@ export function FeeStructuresPage() {
                     {/* <td className="px-6 py-3.5 text-right text-slate-900 dark:text-slate-100">{item.isActive ? 'Active' : 'Inactive'}</td> */}
                     <td className="px-6 py-3.5">
                       <FeeActionMenu
+                        menuId={`fee-structures-action-menu-${item._id}`}
                         onEdit={() => { setEditing(item); setOpen(true); }}
                         onDelete={() => setDeleteTarget(item)}
                       />
@@ -126,13 +127,15 @@ export function FeeStructuresPage() {
 }
 
 function FeeActionMenu({
+  menuId,
   onEdit,
   onDelete,
 }: {
+  menuId: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { rootRef, open, toggle, close } = useExclusiveMenu('fee-structures-action-menu');
+  const { rootRef, open, toggle, close } = useExclusiveMenu(menuId);
 
   return (
     <div ref={rootRef} className="relative flex justify-end">
@@ -147,15 +150,19 @@ function FeeActionMenu({
       {open ? (
         <div className="absolute right-0 top-10 z-20 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-700 shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
           <button
-            onClick={onEdit}
-            onMouseDown={close}
+            onClick={() => {
+              close();
+              onEdit();
+            }}
             className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-900 transition-colors hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-800"
           >
             <PencilIcon className="h-4 w-4 text-blue-500" /> Edit
           </button>
           <button
-            onClick={onDelete}
-            onMouseDown={close}
+            onClick={() => {
+              close();
+              onDelete();
+            }}
             className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-900 transition-colors hover:bg-rose-50 dark:text-slate-100 dark:hover:bg-rose-500/10"
           >
             <Trash2Icon className="h-4 w-4 text-rose-500" /> Delete

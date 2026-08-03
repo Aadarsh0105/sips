@@ -184,6 +184,7 @@ export function ReceptionistsPage() {
                     </td>
                     <td className="px-6 py-3.5">
                       <ReceptionistMenu
+                        menuId={`receptionists-action-menu-${user._id}`}
                         user={user}
                         onEdit={() => {
                           setEditing(user);
@@ -266,15 +267,17 @@ export function ReceptionistsPage() {
 }
 
 function ReceptionistMenu({
+  menuId,
   user,
   onEdit,
   onDelete,
 }: {
+  menuId: string;
   user: ReceptionistRecord;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { rootRef, open, toggle, close } = useExclusiveMenu('receptionists-action-menu');
+  const { rootRef, open, toggle, close } = useExclusiveMenu(menuId);
 
   return (
     <div ref={rootRef} className="relative flex justify-end">

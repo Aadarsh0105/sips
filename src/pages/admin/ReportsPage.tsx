@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Input';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useData, deriveFee } from '../../contexts/DataContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, formatDate, formatTime, isThisMonth, isToday } from '../../lib/utils';
 import { exportCSV, printElement } from '../../lib/export';
 import type { Payment } from '../../lib/types';
@@ -43,11 +44,14 @@ function withinDays(iso: string, days: number): boolean {
 
 export function ReportsPage() {
   const { students, payments, settings } = useData();
+  const { user } = useAuth();
+  const showSeededData = user?.role === 'RECEPTIONIST';
   const [type, setType] = useState<ReportType>('monthly');
 
   const isCollection = ['daily', 'weekly', 'monthly', 'yearly'].includes(type);
 
   const collectionRows = useMemo(() => {
+    if (!showSeededData) return [];
     let filtered: Payment[] = payments.filter((p) => p.status === 'completed');
     if (type === 'daily') filtered = filtered.filter((p) => isToday(p.date));else
     if (type === 'weekly') filtered = filtered.filter((p) => withinDays(p.date, 7));else
@@ -55,9 +59,10 @@ export function ReportsPage() {
     if (type === 'yearly')
     filtered = filtered.filter((p) => new Date(p.date).getFullYear() === new Date().getFullYear());
     return filtered.sort((a, b) => +new Date(b.date) - +new Date(a.date));
-  }, [payments, type]);
+  }, [payments, type, showSeededData]);
 
   const studentRows = useMemo(() => {
+    if (!showSeededData) return [];
     return students.
     map((s) => ({ s, fee: deriveFee(s, payments) })).
     filter(({ fee }) => {
@@ -66,7 +71,7 @@ export function ReportsPage() {
       if (type === 'partial') return fee.status === 'partial';
       return true; // student-wise
     });
-  }, [students, payments, type]);
+  }, [students, payments, type, showSeededData]);
 
   const total = isCollection ?
   collectionRows.reduce((sum, p) => sum + p.amount, 0) :

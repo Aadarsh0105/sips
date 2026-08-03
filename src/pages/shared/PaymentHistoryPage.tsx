@@ -27,6 +27,7 @@ import { Pagination } from '../../components/ui/Pagination';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ReceiptModal } from '../../components/shared/ReceiptModal';
 import { useData } from '../../contexts/DataContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, formatDate, formatTime } from '../../lib/utils';
 import { exportCSV } from '../../lib/export';
 import type { Payment } from '../../lib/types';
@@ -35,12 +36,15 @@ const PAGE_SIZE = 12;
 
 export function PaymentHistoryPage() {
   const { payments, students } = useData();
+  const { user } = useAuth();
+  const showSeededData = user?.role === 'RECEPTIONIST';
   const [query, setQuery] = useState('');
   const [method, setMethod] = useState('all');
   const [page, setPage] = useState(1);
   const [receipt, setReceipt] = useState<Payment | null>(null);
 
   const filtered = useMemo(() => {
+    if (!showSeededData) return [];
     const q = query.trim().toLowerCase();
     return payments.
     filter((p) => {
@@ -55,7 +59,7 @@ export function PaymentHistoryPage() {
       return matchesQuery && matchesMethod;
     }).
     sort((a, b) => +new Date(b.date) - +new Date(a.date));
-  }, [payments, students, query, method]);
+  }, [payments, students, query, method, showSeededData]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);

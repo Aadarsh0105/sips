@@ -43,33 +43,27 @@ import type { Payment, Student } from '../../lib/types';
 export function FeeManagementPage() {
   const { students, payments, verifyPayment } = useData();
   const { user } = useAuth();
+  const showSeededData = user?.role === 'RECEPTIONIST';
   const [query, setQuery] = useState('');
   const [paying, setPaying] = useState<Student | null>(null);
   const [receipt, setReceipt] = useState<Payment | null>(null);
 
   const pending = useMemo(
-    () => payments.filter((p) => p.status === 'pending_verification'),
-    [payments]
+    () => (showSeededData ? payments.filter((p) => p.status === 'pending_verification') : []),
+    [payments, showSeededData]
   );
 
   const outstanding = useMemo(() => {
+    if (!showSeededData) return [];
     const q = query.trim().toLowerCase();
     return students.
-    map((s) => ({ s, fee: deriveFee(s, payments) })).
-    filter(({ s, fee }) => {
-      if (fee.remaining <= 0) return false;
-      if (!q) return true;
-      return (
-        s.name.toLowerCase().includes(q) ||
-        s.id.toLowerCase().includes(q) ||
-        s.mobile.toLowerCase().includes(q));
-
-    }).
-    sort((a, b) => b.fee.remaining - a.fee.remaining);
-  }, [students, payments, query]);
+    map((s) => ({ s, fee: deriveFee(s, payments) }))
+  }, [students, payments, query, showSeededData]);
 
   const totalDue = outstanding.reduce((sum, o) => sum + o.fee.remaining, 0);
-  const partialCount = students.filter((s) => deriveFee(s, payments).status === 'partial').length;
+  const partialCount = showSeededData
+    ? students.filter((s) => deriveFee(s, payments).status === 'partial').length
+    : 0;
 
   return (
     <div>

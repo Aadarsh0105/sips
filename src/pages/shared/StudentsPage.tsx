@@ -359,7 +359,7 @@ function ActionMenu({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { rootRef, open, toggle, close } = useExclusiveMenu('students-action-menu');
+  const { rootRef, open, toggle, close } = useExclusiveMenu(`students-action-menu-${student._id}`);
 
   return (
     <div ref={rootRef} className="relative flex justify-end">
