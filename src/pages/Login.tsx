@@ -130,7 +130,7 @@ export function Login() {
             </Button>
           </form>
 
-          <div className="mt-8 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          {/* <div className="mt-8 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
               Demo credentials
             </p>
@@ -154,7 +154,7 @@ export function Login() {
                 <span className="text-slate-400">9999999999 / Admin@123</span>
               </button>
             </div>
-          </div>
+          </div> */}
         </motion.div>
       </div>
     </div>
