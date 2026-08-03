@@ -450,3 +450,4 @@ function toLegacyStudent(student: StudentRecord) {
     createdAt: student.createdAt,
   };
 }
+

@@ -18,7 +18,14 @@ export interface StudentRecord {
   address: string;
   admissionDate?: string;
   feeStartDate?: string;
+  admissionFee?: number;
   monthlyFee?: number;
+  examFee?: number;
+  sportFee?: number;
+  computerFee?: number;
+  functionFee?: number;
+  smartClassFee?: number;
+  otherCharges?: number;
   openingDue?: number;
   totalFee: number;
   paidFee: number;
@@ -150,4 +157,5 @@ const studentsSlice = createSlice({
 });
 
 export default studentsSlice.reducer;
+
 

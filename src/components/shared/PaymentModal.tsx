@@ -54,6 +54,7 @@ export function PaymentModal({
         amount: value,
         paymentMode: method.toUpperCase(),
         remarks: remarks.trim() || 'Fee payment',
+        feeHead:"OTHER"
       });
 
       const paymentData = response?.data?.data;

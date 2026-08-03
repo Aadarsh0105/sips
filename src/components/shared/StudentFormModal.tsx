@@ -137,6 +137,20 @@ export function StudentFormModal({
   }, [editing, open]);
 
   useEffect(() => {
+    if (editing) {
+      setFeeStructure({
+        admissionFee: Number(editing.admissionFee ?? 0),
+        monthlyFee: Number(editing.monthlyFee ?? 0),
+        examFee: Number(editing.examFee ?? 0),
+        sportFee: Number(editing.sportFee ?? 0),
+        computerFee: Number(editing.computerFee ?? 0),
+        functionFee: Number(editing.functionFee ?? 0),
+        smartClassFee: Number(editing.smartClassFee ?? 0),
+        otherCharges: Number(editing.otherCharges ?? 0),
+      });
+      return;
+    }
+
     const selectedClass = form.className.trim();
     if (!selectedClass) {
       setFeeStructure(emptyFeeStructure);
@@ -165,7 +179,7 @@ export function StudentFormModal({
       .catch(() => {
         setFeeStructure(emptyFeeStructure);
       });
-  }, [form.className]);
+  }, [form.className, editing]);
 
   useEffect(() => {
     const computedTotal =
@@ -321,10 +335,10 @@ export function StudentFormModal({
               ) : null}
             </Field>
             <Field label="Admission Fee">
-              <Input type="text" value={String(feeStructure.admissionFee)} disabled />
+              <Input type="text" value={String(feeStructure.admissionFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, admissionFee: Number(e.target.value) }))} />
             </Field>
             <Field label="Monthly Fee">
-              <Input type="text" value={String(feeStructure.monthlyFee)} disabled />
+              <Input type="text" value={String(feeStructure.monthlyFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, monthlyFee: Number(e.target.value) }))} />
             </Field>
             <Field label="Exam Fee">
               <Input type="text" value={String(feeStructure.examFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, examFee: Number(e.target.value) }))} />
@@ -358,3 +372,4 @@ export function StudentFormModal({
     </Modal>
   );
 }
+
