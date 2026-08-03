@@ -247,6 +247,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
                       </td>
                       <td className="px-6 py-3.5">
                         <ActionMenu
+                          menuId={`students-action-menu-${student._id}`}
                           canManage={canManage}
                           canPay={(student.dueFee ?? fee.remaining) > 0}
                           onView={() => setDetail(student)}
@@ -343,6 +344,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
 }
 
 function ActionMenu({
+  menuId,
   canManage,
   canPay,
   onView,
@@ -351,6 +353,7 @@ function ActionMenu({
   onEdit,
   onDelete,
 }: {
+  menuId: string;
   canManage: boolean;
   canPay: boolean;
   onView: () => void;
@@ -359,7 +362,7 @@ function ActionMenu({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { rootRef, open, toggle, close } = useExclusiveMenu(`students-action-menu-${student._id}`);
+  const { rootRef, open, toggle, close } = useExclusiveMenu(menuId);
 
   return (
     <div ref={rootRef} className="relative flex justify-end">
@@ -374,15 +377,19 @@ function ActionMenu({
       {open ? (
         <div className="absolute right-0 top-10 z-20 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-700 shadow-lg dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
           <button
-            onClick={onView}
-            onMouseDown={close}
+            onClick={() => {
+              close();
+              onView();
+            }}
             className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
             <EyeIcon className="h-4 w-4 text-slate-500 dark:text-slate-300" /> View
           </button>
           {canPay ? (
             <button
-              onClick={onPay}
-              onMouseDown={close}
+              onClick={() => {
+                close();
+                onPay();
+              }}
               className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
               <WalletIcon className="h-4 w-4 text-emerald-500" /> Pay Fee
             </button>
@@ -395,14 +402,18 @@ function ActionMenu({
           {canManage ? (
             <>
               <button
-                onClick={onEdit}
-                onMouseDown={close}
+                onClick={() => {
+                  close();
+                  onEdit();
+                }}
                 className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
                 <PencilIcon className="h-4 w-4 text-blue-500" /> Edit
               </button>
               <button
-                onClick={onDelete}
-                onMouseDown={close}
+                onClick={() => {
+                  close();
+                  onDelete();
+                }}
                 className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-500/10">
                 <Trash2Icon className="h-4 w-4 text-rose-500" /> Delete
               </button>
