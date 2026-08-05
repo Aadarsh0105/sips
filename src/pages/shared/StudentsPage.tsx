@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   MoreVerticalIcon,
@@ -23,6 +23,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { StudentFormModal } from '../../components/shared/StudentFormModal';
 import { StudentDetailModal } from '../../components/students/StudentDetailModal';
+import { StudentPaymentHistoryModal } from '../../components/students/StudentPaymentHistoryModal';
 import { PaymentModal } from '../../components/shared/PaymentModal';
 import { ReceiptModal } from '../../components/shared/ReceiptModal';
 import { useData, deriveFee } from '../../contexts/DataContext';
@@ -36,8 +37,7 @@ import {
   fetchStudents,
   type StudentRecord,
 } from '../../features/students/studentsSlice';
-import { formatCurrency, statusLabel } from '../../lib/utils';
-import { exportCSV } from '../../lib/export';
+import { formatCurrency } from '../../lib/utils';
 import type { Payment } from '../../lib/types';
 
 const DEFAULT_PAGE_SIZE = 8;
@@ -57,6 +57,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<StudentRecord | null>(null);
   const [detail, setDetail] = useState<StudentRecord | null>(null);
+  const [historyStudent, setHistoryStudent] = useState<StudentRecord | null>(null);
   const [paying, setPaying] = useState<StudentRecord | null>(null);
   const [feeTarget, setFeeTarget] = useState<StudentRecord | null>(null);
   const [feeForm, setFeeForm] = useState({ examFee: 0, sportFee: 0, computerFee: 0 });
@@ -109,27 +110,6 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
       .then((student) => setDetail(student))
       .catch(() => undefined);
   }, [dispatch, detail?._id]);
-
-  const handleExport = () => {
-    exportCSV(
-      'students',
-      filtered.map((student) => {
-        const fee = deriveFee(toLegacyStudent(student), payments);
-        return {
-          StudentID: student.studentId,
-          Admission: student.admissionNo,
-          Name: student.name,
-          Class: `${student.className}-${student.section}`,
-          Mobile: student.mobile,
-          TotalFee: fee.totalFee,
-          Paid: fee.paid,
-          Remaining: fee.remaining,
-          Status: statusLabel(fee.status),
-        };
-      })
-    );
-    toast.success('Students exported to CSV.');
-  };
 
   return (
     <div>
@@ -197,15 +177,15 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
                 <tr>
-                  <th className="px-6 py-3 font-semibold">Student</th>
-                  <th className="px-6 py-3 font-semibold">Admission No</th>
-                  <th className="px-6 py-3 font-semibold">Admission Date</th>
-                  <th className="px-6 py-3 font-semibold">Class</th>
-                  <th className="px-6 py-3 text-right font-semibold">Monthly Fee</th>
-                  <th className="px-6 py-3 text-right font-semibold">Paid Fee</th>
-                  <th className="px-6 py-3 text-right font-semibold">Due Fee</th>
-                  <th className="px-6 py-3 text-right font-semibold">Total Fee</th>
-                  <th className="px-6 py-3 text-right font-semibold">Actions</th>
+                  <th className="px-3 py-3 font-semibold">Student</th>
+                  <th className="px-3 py-3 font-semibold">Admission No</th>
+                  <th className="px-3 py-3 font-semibold">Admission Date</th>
+                  <th className="px-3 py-3 font-semibold">Class</th>
+                  <th className="px-3 py-3 text-right font-semibold">Monthly Fee</th>
+                  <th className="px-3 py-3 text-right font-semibold">Paid Fee</th>
+                  <th className="px-3 py-3 text-right font-semibold">Due Fee</th>
+                  <th className="px-3 py-3 text-right font-semibold">Total Fee</th>
+                  <th className="px-3 py-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -214,7 +194,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
                   const fee = deriveFee(legacy, payments);
                   return (
                     <tr key={student._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                      <td className="px-6 py-3.5">
+                      <td className="px-3 py-3.5">
                         <div className="flex items-center gap-3">
                           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-600 dark:bg-brand-500/15">
                             {student.name[0]}
@@ -225,37 +205,34 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-3.5 text-slate-500">{student.admissionNo || '—'}</td>
-                      <td className="px-6 py-3.5 text-slate-500">
-                        {student.admissionDate ? student.admissionDate.slice(0, 10) : '—'}
+                      <td className="px-3 py-3.5 text-slate-500">{student.admissionNo || 'â€”'}</td>
+                      <td className="px-3 py-3.5 text-slate-500">
+                        {student.admissionDate ? student.admissionDate.slice(0, 10) : 'â€”'}
                       </td>
-                      <td className="px-6 py-3.5 text-slate-500">
+                      <td className="px-3 py-3.5 text-slate-500">
                         {student.className}-{student.section}
                       </td>
-                      <td className="px-6 py-3.5 text-right text-slate-600 dark:text-slate-300">
+                      <td className="px-3 py-3.5 text-right text-slate-600 dark:text-slate-300">
                         {formatCurrency(student.monthlyFee ?? 0)}
                       </td>
-                      <td className="px-6 py-3.5 text-right text-emerald-600 dark:text-emerald-400">
+                      <td className="px-3 py-3.5 text-right text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(student.paidFee ?? fee.paid)}
                       </td>
-                      <td className="px-6 py-3.5 text-right font-semibold text-slate-800 dark:text-slate-100">
+                      <td className="px-3 py-3.5 text-right font-semibold text-slate-800 dark:text-slate-100">
                         {formatCurrency(student.dueFee ?? fee.remaining)}
                       </td>
-                      <td className="px-6 py-3.5 text-right text-slate-600 dark:text-slate-300">
+                      <td className="px-3 py-3.5 text-right text-slate-600 dark:text-slate-300">
                         {formatCurrency(student.paidFee + student.dueFee)}
                         {/* {formatCurrency(student.totalFee)} */}
                       </td>
-                      <td className="px-6 py-3.5">
+                      <td className="px-3 py-3.5">
                         <ActionMenu
                           menuId={`students-action-menu-${student._id}`}
                           canManage={canManage}
                           canPay={(student.dueFee ?? fee.remaining) > 0}
                           onView={() => setDetail(student)}
+                          onHistory={() => setHistoryStudent(student)}
                           onPay={() => setPaying(student)}
-                          onFeeStructure={() => {
-                            setFeeTarget(student);
-                            setFeeForm({ examFee: 0, sportFee: 0, computerFee: 0 });
-                          }}
                           onEdit={() => {
                             setEditing(student);
                             setFormOpen(true);
@@ -286,6 +263,12 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
         onClose={() => setDetail(null)}
         onViewReceipt={(payment) => setReceipt(payment)}
       />
+      <StudentPaymentHistoryModal
+        student={historyStudent}
+        open={!!historyStudent}
+        onClose={() => setHistoryStudent(null)}
+        onViewReceipt={(payment) => setReceipt(payment)}
+      />
       <PaymentModal
         student={paying}
         open={!!paying}
@@ -296,7 +279,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
         open={!!feeTarget}
         onClose={() => setFeeTarget(null)}
         title="Student Fee Structure"
-        subtitle={feeTarget ? `${feeTarget.name} · ${feeTarget.studentId}` : ''}
+        subtitle={feeTarget ? `${feeTarget.name} Â· ${feeTarget.studentId}` : ''}
         footer={
           <>
             <Button variant="outline" onClick={() => setFeeTarget(null)}>Cancel</Button>
@@ -348,8 +331,8 @@ function ActionMenu({
   canManage,
   canPay,
   onView,
+  onHistory,
   onPay,
-  onFeeStructure,
   onEdit,
   onDelete,
 }: {
@@ -357,8 +340,8 @@ function ActionMenu({
   canManage: boolean;
   canPay: boolean;
   onView: () => void;
+  onHistory: () => void;
   onPay: () => void;
-  onFeeStructure: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -394,6 +377,14 @@ function ActionMenu({
               <WalletIcon className="h-4 w-4 text-emerald-500" /> Pay Fee
             </button>
           ) : null}
+          <button
+            onClick={() => {
+              close();
+              onHistory();
+            }}
+            className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+            <WalletIcon className="h-4 w-4 text-indigo-500" /> Transactions
+          </button>
           {/* <button
             onClick={onFeeStructure}
             className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
@@ -450,4 +441,3 @@ function toLegacyStudent(student: StudentRecord) {
     createdAt: student.createdAt,
   };
 }
-

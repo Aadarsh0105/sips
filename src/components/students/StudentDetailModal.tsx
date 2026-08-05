@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   CalendarIcon,
   MailIcon,
@@ -10,7 +10,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { Badge } from '../ui/Badge';
 import { useData } from '../../contexts/DataContext';
-import { formatCurrency, formatDate, formatTime } from '../../lib/utils';
+import { formatCurrency, formatDate } from '../../lib/utils';
 import type { Payment } from '../../lib/types';
 import type { StudentRecord } from '../../features/students/studentsSlice';
 
@@ -19,15 +19,15 @@ export function StudentDetailModal({
   open,
   onClose,
   onViewReceipt,
+  onViewHistory,
 }: {
   student: StudentRecord | null;
   open: boolean;
   onClose: () => void;
   onViewReceipt?: (p: Payment) => void;
+  onViewHistory?: () => void;
 }) {
-  const { paymentsFor } = useData();
   if (!student) return null;
-  const history = paymentsFor(student._id);
 
   return (
     <Modal
@@ -35,7 +35,7 @@ export function StudentDetailModal({
       onClose={onClose}
       size="xl"
       title="Student Profile"
-      subtitle={`Admission ${student.admissionNo || '�'} � Student ${student.studentId}`}
+      subtitle={`Admission ${student.admissionNo || '�'} · Student ${student.studentId}`}
       footer={null}
     >
       <div className="space-y-6">
@@ -79,61 +79,20 @@ export function StudentDetailModal({
         <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-200 p-4 sm:grid-cols-4 dark:border-slate-800">
           <MiniStat label="Total Fee" value={formatCurrency(student.totalFee)} />
           <MiniStat label="Monthly Fee" value={formatCurrency(student.monthlyFee ?? 0)} tone="text-slate-700" />
-          {/* <MiniStat label="Opening Due" value={formatCurrency(student.openingDue ?? 0)} tone="text-rose-600" /> */}
           <MiniStat label="Due Fee" value={formatCurrency(student.dueFee ?? 0)} tone="text-rose-600" />
           <MiniStat label="Paid Fee" value={formatCurrency(student.paidFee ?? 0)} tone="text-emerald-600" />
         </div>
 
-        <div>
-          <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
-            <FileTextIcon className="h-4 w-4 text-brand-500" /> Payment History
-          </h4>
-          {history.length === 0 ? (
-            <p className="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-slate-400 dark:bg-slate-800/50">
-              No payments recorded yet.
-            </p>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase text-slate-400 dark:bg-slate-800/50">
-                  <tr>
-                    <th className="px-4 py-2.5 font-semibold">Receipt</th>
-                    <th className="px-4 py-2.5 font-semibold">Date</th>
-                    <th className="px-4 py-2.5 font-semibold">Method</th>
-                    <th className="px-4 py-2.5 text-right font-semibold">Amount</th>
-                    <th className="px-4 py-2.5 font-semibold">Status</th>
-                    {onViewReceipt && <th className="px-4 py-2.5" />}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {history.map((p) => (
-                    <tr key={p.id}>
-                      <td className="px-4 py-2.5 font-medium text-slate-700 dark:text-slate-200">{p.receiptNumber}</td>
-                      <td className="px-4 py-2.5 text-slate-500">{formatDate(p.date)} � {formatTime(p.date)}</td>
-                      <td className="px-4 py-2.5 uppercase text-slate-500">{p.method}</td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(p.amount)}</td>
-                      <td className="px-4 py-2.5">
-                        {p.status === 'completed' ? <Badge tone="green">Completed</Badge> : <Badge tone="amber">Pending</Badge>}
-                      </td>
-                      {onViewReceipt && (
-                        <td className="px-4 py-2.5 text-right">
-                          {p.status === 'completed' && (
-                            <button
-                              type="button"
-                              onClick={() => onViewReceipt(p)}
-                              className="rounded-lg px-3 py-1 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10"
-                            >
-                              Receipt
-                            </button>
-                          )}
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+        <div className="flex flex-wrap gap-2">
+          {onViewHistory ? (
+            <button
+              type="button"
+              onClick={onViewHistory}
+              className="inline-flex items-center gap-2 rounded-lg border border-brand-200 px-3 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50 dark:border-brand-500/20 dark:text-brand-300 dark:hover:bg-brand-500/10"
+            >
+              <FileTextIcon className="h-4 w-4" /> View Payment History
+            </button>
+          ) : null}
         </div>
       </div>
     </Modal>

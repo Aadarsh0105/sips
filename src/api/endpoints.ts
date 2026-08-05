@@ -6,7 +6,7 @@ export const API = {
 
   RECEPTIONISTS: "/api/receptionist",
 
-  FEES: "/fees",
+  FEES: "/api/fees",
   FEES_COLLECT: "/api/fees/collect",
 
   DASHBOARD_ADMIN: "/api/dashboard/admin",

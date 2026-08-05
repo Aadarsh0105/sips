@@ -26,6 +26,7 @@ export function FeeStructuresPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<FeeStructureRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<FeeStructureRecord | null>(null);
+  const sortedItems = [...items].sort((left, right) => getClassSortRank(left.className) - getClassSortRank(right.className));
 
   useEffect(() => { void dispatch(fetchFeeStructures()); }, [dispatch]);
 
@@ -40,42 +41,42 @@ export function FeeStructuresPage() {
       <Card>
         {loading ? (
           <p className="px-6 py-10 text-sm text-slate-500">Loading fee structures...</p>
-        ) : items.length === 0 ? (
+        ) : sortedItems.length === 0 ? (
           <EmptyState icon={Layers3Icon} title="No fee structures" description="Create class-wise fee templates." />
         ) : (
           <div className="overflow-x-auto lg:overflow-visible">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left">
               <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
                 <tr>
-                  <th className="px-6 py-3 font-semibold">Class</th>
-                  <th className="px-6 py-3 text-right font-semibold">Admission</th>
-                  <th className="px-6 py-3 text-right font-semibold">Monthly</th>
-                  <th className="px-6 py-3 text-right font-semibold">Exam</th>
-                  <th className="px-6 py-3 text-right font-semibold">Sport</th>
-                  <th className="px-6 py-3 text-right font-semibold">Computer</th>
-                  <th className="px-6 py-3 text-right font-semibold">Function</th>
-                  <th className="px-6 py-3 text-right font-semibold">Smart Class</th>
-                  <th className="px-6 py-3 text-right font-semibold">Other</th>
-                  <th className="px-6 py-3 text-right font-semibold">Total</th>
-                  {/* <th className="px-6 py-3 text-right font-semibold">Status</th> */}
-                  <th className="px-6 py-3 text-right font-semibold">Actions</th>
+                  <th className="px-3 py-3 text-center font-semibold">Class</th>
+                  <th className="px-3 py-3 text-right font-semibold">Admission</th>
+                  <th className="px-3 py-3 text-right font-semibold">Monthly</th>
+                  <th className="px-3 py-3 text-right font-semibold">Exam</th>
+                  <th className="px-3 py-3 text-right font-semibold">Sport</th>
+                  <th className="px-3 py-3 text-right font-semibold">Computer</th>
+                  <th className="px-3 py-3 text-right font-semibold">Function</th>
+                  <th className="px-3 py-3 text-right font-semibold">Smart Class</th>
+                  <th className="px-3 py-3 text-right font-semibold">Other</th>
+                  <th className="px-3 py-3 text-right font-semibold">Total</th>
+                  {/* <th className="px-3 py-3 text-right font-semibold">Status</th> */}
+                  <th className="px-3 py-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {items.map((item) => (
+              <tbody className="divide-y text-[13px] divide-slate-100 dark:divide-slate-800">
+                {sortedItems.map((item) => (
                   <tr key={item._id} className="text-slate-900 dark:text-slate-100">
-                    <td className="px-6 py-3.5 font-semibold text-slate-900 dark:text-slate-100">{item.className}</td>
-                    <td className="px-6 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.admissionFee)}</td>
-                    <td className="px-6 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.monthlyFee)}</td>
-                    <td className="px-6 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.examFee)}</td>
-                    <td className="px-6 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.sportFee)}</td>
-                    <td className="px-6 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.computerFee)}</td>
-                    <td className="px-6 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.functionFee)}</td>
-                    <td className="px-6 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.smartClassFee)}</td>
-                    <td className="px-6 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.otherCharges)}</td>
-                    <td className="px-6 py-3.5 text-right font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(item.totalFee)}</td>
-                    {/* <td className="px-6 py-3.5 text-right text-slate-900 dark:text-slate-100">{item.isActive ? 'Active' : 'Inactive'}</td> */}
-                    <td className="px-6 py-3.5">
+                    <td className="px-3 py-3.5 text-center font-semibold text-slate-900 dark:text-slate-100">{item.className}</td>
+                    <td className="px-3 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.admissionFee)}</td>
+                    <td className="px-3 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.monthlyFee)}</td>
+                    <td className="px-3 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.examFee)}</td>
+                    <td className="px-3 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.sportFee)}</td>
+                    <td className="px-3 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.computerFee)}</td>
+                    <td className="px-3 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.functionFee)}</td>
+                    <td className="px-3 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.smartClassFee)}</td>
+                    <td className="px-3 py-3.5 text-right text-slate-900 dark:text-slate-100">{formatCurrency(item.otherCharges)}</td>
+                    <td className="px-3 py-3.5 text-right font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(item.totalFee)}</td>
+                    {/* <td className="px-3 py-3.5 text-right text-slate-900 dark:text-slate-100">{item.isActive ? 'Active' : 'Inactive'}</td> */}
+                    <td className="px-3 py-3.5">
                       <FeeActionMenu
                         menuId={`fee-structures-action-menu-${item._id}`}
                         onEdit={() => { setEditing(item); setOpen(true); }}
@@ -124,6 +125,29 @@ export function FeeStructuresPage() {
       />
     </div>
   );
+}
+
+function getClassSortRank(className: string) {
+  const normalized = (className ?? '').trim().toLowerCase();
+  if (!normalized) {
+    return 9999;
+  }
+  const specialOrder: Record<string, number> = {
+    nursery: 0,
+    lkg: 1,
+    ukg: 2,
+  };
+
+  if (normalized in specialOrder) {
+    return specialOrder[normalized];
+  }
+
+  const numeric = Number(normalized);
+  if (!Number.isNaN(numeric)) {
+    return 10 + numeric;
+  }
+
+  return 1000 + normalized.charCodeAt(0);
 }
 
 function FeeActionMenu({

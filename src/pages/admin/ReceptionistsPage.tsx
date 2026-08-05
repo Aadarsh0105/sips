@@ -12,7 +12,6 @@ import * as yup from 'yup';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Field, Input } from '../../components/ui/Input';
@@ -155,9 +154,10 @@ export function ReceptionistsPage() {
               <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
                 <tr>
                   <th className="px-6 py-3 font-semibold">Name</th>
-                  <th className="px-6 py-3 font-semibold">Contact</th>
+                  <th className="px-6 py-3 font-semibold">Mobile</th>
+                  <th className="px-6 py-3 font-semibold">Email</th>
                   <th className="px-6 py-3 font-semibold">Created</th>
-                  <th className="px-6 py-3 font-semibold">Status</th>
+                  {/* <th className="px-6 py-3 font-semibold">Status</th> */}
                   <th className="px-6 py-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
@@ -175,20 +175,22 @@ export function ReceptionistsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-3.5 text-slate-500">
+                      <p>{user.mobile}</p>
+                    </td>
+                    <td className="px-6 py-3.5 text-slate-500">
                       <p>{user.email}</p>
-                      <p className="text-xs text-slate-400">{user.mobile}</p>
                     </td>
                     <td className="px-6 py-3.5 text-slate-500">{formatDate(user.createdAt)}</td>
-                    <td className="px-6 py-3.5">
+                    {/* <td className="px-6 py-3.5">
                       {user.isActive ? <Badge tone="green">Active</Badge> : <Badge tone="slate">Inactive</Badge>}
-                    </td>
+                    </td> */}
                     <td className="px-6 py-3.5">
                       <ReceptionistMenu
                         menuId={`receptionists-action-menu-${user._id}`}
                         user={user}
                         onEdit={() => {
                           setEditing(user);
-                        setFormOpen(true);
+                          setFormOpen(true);
                         }}
                         onDelete={() => setDeleteTarget(user)}
                       />
@@ -268,7 +270,6 @@ export function ReceptionistsPage() {
 
 function ReceptionistMenu({
   menuId,
-  user,
   onEdit,
   onDelete,
 }: {

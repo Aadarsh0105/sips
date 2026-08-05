@@ -1,20 +1,4 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   CalendarDaysIcon,
@@ -41,14 +25,15 @@ import {
   statusLabel } from
 '../../lib/utils';
 import type { Payment, Student } from '../../lib/types';
+import type { StudentRecord } from '../../features/students/studentsSlice';
 
 export function ReceptionDashboard() {
   const { students, payments } = useData();
   const { user } = useAppSelector((state) => state.auth);
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const [detail, setDetail] = useState<Student | null>(null);
-  const [paying, setPaying] = useState<Student | null>(null);
+  const [detail, setDetail] = useState<StudentRecord | null>(null);
+  const [paying, setPaying] = useState<StudentRecord | null>(null);
   const [receipt, setReceipt] = useState<Payment | null>(null);
 
   const myToday = useMemo(
@@ -148,11 +133,11 @@ export function ReceptionDashboard() {
                       
                           {statusLabel(fee.status)}
                         </span>
-                        <Button size="sm" variant="outline" onClick={() => setDetail(s)}>
+                        <Button size="sm" variant="outline" onClick={() => setDetail(toStudentRecord(s, payments))}>
                           View
                         </Button>
                         {fee.remaining > 0 &&
-                    <Button size="sm" onClick={() => setPaying(s)}>
+                    <Button size="sm" onClick={() => setPaying(toStudentRecord(s, payments))}>
                             Collect
                           </Button>
                     }
@@ -185,7 +170,7 @@ export function ReceptionDashboard() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {myToday.map((p) => {
-                const s = students.find((x) => x.id === p.studentId);
+                const s = students.find((x: Student) => x.id === p.studentId);
                 return (
                   <tr key={p.id}>
                       <td className="px-6 py-3 font-medium text-slate-700 dark:text-slate-200">
@@ -214,10 +199,6 @@ export function ReceptionDashboard() {
         student={detail}
         open={!!detail}
         onClose={() => setDetail(null)}
-        onPay={(s) => {
-          setDetail(null);
-          setPaying(s);
-        }}
         onViewReceipt={(p) => setReceipt(p)} />
       
       <PaymentModal
@@ -229,4 +210,43 @@ export function ReceptionDashboard() {
       <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />
     </div>);
 
+}
+
+function toStudentRecord(student: Student, payments: Payment[]): StudentRecord {
+  const fee = deriveFee(student, payments);
+  return {
+    _id: student.id,
+    studentId: student.id,
+    admissionNo: student.admissionNumber,
+    name: student.name,
+    fatherName: student.fatherName,
+    motherName: student.motherName,
+    mobile: student.mobile,
+    email: student.email,
+    gender: String(student.gender).toUpperCase(),
+    dob: student.dob,
+    className: student.className,
+    section: student.section,
+    address: student.address,
+    admissionDate: student.admissionDate || '',
+    feeStartDate: undefined,
+    admissionFee: undefined,
+    monthlyFee: student.monthlyFee,
+    examFee: undefined,
+    sportFee: undefined,
+    computerFee: undefined,
+    functionFee: undefined,
+    smartClassFee: undefined,
+    otherCharges: undefined,
+    openingDue: student.openingDue,
+    totalFee: fee.totalFee,
+    paidFee: fee.paid,
+    dueFee: fee.remaining,
+    status: fee.status.toUpperCase(),
+    isDeleted: false,
+    createdBy: '',
+    createdAt: student.createdAt,
+    updatedAt: student.createdAt,
+    __v: 0,
+  };
 }

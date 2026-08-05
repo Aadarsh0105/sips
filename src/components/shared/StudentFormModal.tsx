@@ -12,6 +12,19 @@ import { CLASS_OPTIONS } from '../../lib/classes';
 import type { Gender } from '../../lib/types';
 
 const SECTIONS = ['A', 'B', 'C', 'D'];
+const DISCOUNT_TYPE_OPTIONS = [
+  { value: 'NONE', label: 'None' },
+  { value: 'SIBLING', label: 'Sibling' },
+  { value: 'RTE', label: 'RTE' },
+  { value: 'GIRLS_SPECIAL', label: 'Girls Special' },
+] as const;
+
+const ENV = import.meta.env as Record<string, string | undefined>;
+const DISCOUNT_RULES = {
+  siblingMonthlyPercent: Number(ENV.VITE_SIBLING_MONTHLY_DISCOUNT_PERCENT ?? 20),
+  rteAllPercent: Number(ENV.VITE_RTE_FEES_DISCOUNT_PERCENT ?? 100),
+  girlsAdmissionPercent: Number(ENV.VITE_GIRLS_ADMISSION_DISCOUNT_PERCENT ?? 50),
+} as const;
 
 function getAdmissionPrefix(className: string) {
   return className ? `ADM-${className}` : 'ADM-';
@@ -28,6 +41,7 @@ type FormState = {
   dob: string;
   className: string;
   section: string;
+  feeDiscountType: string;
   address: string;
   admissionDate: string;
   totalFee: number;
@@ -44,6 +58,13 @@ type FeeStructureState = {
   otherCharges: number;
 };
 
+type AppliedFeeStructureState = FeeStructureState & {
+  admissionDiscount: number;
+  monthlyDiscount: number;
+  totalDiscount: number;
+  totalFee: number;
+};
+
 const schema: yup.ObjectSchema<any> = yup.object({
   admissionNo: yup.string().required('Admission no is required'),
   name: yup.string().required('Student name is required'),
@@ -58,6 +79,7 @@ const schema: yup.ObjectSchema<any> = yup.object({
   dob: yup.string().required('Date of birth is required'),
   className: yup.string().required('Class is required'),
   section: yup.string().required('Section is required'),
+  feeDiscountType: yup.string().required('Discount type is required'),
   address: yup.string().required('Address is required'),
   admissionDate: yup.string().required('Admission date is required'),
   totalFee: yup.number().typeError('Total fee must be a number').min(0, 'Total fee cannot be negative').required(),
@@ -74,6 +96,7 @@ const empty: FormState = {
   dob: '',
   className: '',
   section: 'A',
+  feeDiscountType: 'NONE',
   address: '',
   admissionDate: '',
   totalFee: 0,
@@ -90,6 +113,60 @@ const emptyFeeStructure: FeeStructureState = {
   otherCharges: 0,
 };
 
+const emptyAppliedFeeStructure: AppliedFeeStructureState = {
+  ...emptyFeeStructure,
+  admissionDiscount: 0,
+  monthlyDiscount: 0,
+  totalDiscount: 0,
+  totalFee: 0,
+};
+
+function applyDiscounts(base: FeeStructureState, discountType: string): AppliedFeeStructureState {
+  const normalizedDiscount = discountType?.toUpperCase?.() ?? 'NONE';
+  const admissionDiscount =
+    normalizedDiscount === 'GIRLS_SPECIAL'
+      ? Math.round((base.admissionFee * DISCOUNT_RULES.girlsAdmissionPercent) / 100)
+      : normalizedDiscount === 'RTE'
+        ? base.admissionFee
+        : 0;
+  const monthlyDiscount =
+    normalizedDiscount === 'SIBLING'
+      ? Math.round((base.monthlyFee * DISCOUNT_RULES.siblingMonthlyPercent) / 100)
+      : normalizedDiscount === 'RTE'
+        ? base.monthlyFee
+        : 0;
+  const otherFeeDiscount =
+    normalizedDiscount === 'RTE'
+      ? base.examFee + base.sportFee + base.computerFee + base.functionFee + base.smartClassFee + base.otherCharges
+      : 0;
+  const totalDiscount = admissionDiscount + monthlyDiscount + otherFeeDiscount;
+  const totalFee =
+    Math.max(0, base.admissionFee - admissionDiscount) +
+    Math.max(0, base.monthlyFee - monthlyDiscount) +
+    Math.max(0, base.examFee - (normalizedDiscount === 'RTE' ? base.examFee : 0)) +
+    Math.max(0, base.sportFee - (normalizedDiscount === 'RTE' ? base.sportFee : 0)) +
+    Math.max(0, base.computerFee - (normalizedDiscount === 'RTE' ? base.computerFee : 0)) +
+    Math.max(0, base.functionFee - (normalizedDiscount === 'RTE' ? base.functionFee : 0)) +
+    Math.max(0, base.smartClassFee - (normalizedDiscount === 'RTE' ? base.smartClassFee : 0)) +
+    Math.max(0, base.otherCharges - (normalizedDiscount === 'RTE' ? base.otherCharges : 0));
+
+  return {
+    ...base,
+    admissionDiscount,
+    monthlyDiscount,
+    totalDiscount,
+    admissionFee: Math.max(0, base.admissionFee - admissionDiscount),
+    monthlyFee: Math.max(0, base.monthlyFee - monthlyDiscount),
+    examFee: Math.max(0, base.examFee - (normalizedDiscount === 'RTE' ? base.examFee : 0)),
+    sportFee: Math.max(0, base.sportFee - (normalizedDiscount === 'RTE' ? base.sportFee : 0)),
+    computerFee: Math.max(0, base.computerFee - (normalizedDiscount === 'RTE' ? base.computerFee : 0)),
+    functionFee: Math.max(0, base.functionFee - (normalizedDiscount === 'RTE' ? base.functionFee : 0)),
+    smartClassFee: Math.max(0, base.smartClassFee - (normalizedDiscount === 'RTE' ? base.smartClassFee : 0)),
+    otherCharges: Math.max(0, base.otherCharges - (normalizedDiscount === 'RTE' ? base.otherCharges : 0)),
+    totalFee,
+  };
+}
+
 export function StudentFormModal({
   open,
   onClose,
@@ -103,6 +180,7 @@ export function StudentFormModal({
   const [form, setForm] = useState<FormState>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [feeStructure, setFeeStructure] = useState<FeeStructureState>(emptyFeeStructure);
+  const [appliedFeeStructure, setAppliedFeeStructure] = useState<AppliedFeeStructureState>(emptyAppliedFeeStructure);
 
   const admissionPrefix = getAdmissionPrefix(form.className);
   const admissionSuffix = form.admissionNo.startsWith(admissionPrefix)
@@ -111,24 +189,27 @@ export function StudentFormModal({
 
   useEffect(() => {
     if (editing) {
-      const prefix = getAdmissionPrefix(editing.className);
-      const suffix = editing.admissionNo.startsWith(prefix)
-        ? editing.admissionNo.slice(prefix.length)
-        : editing.admissionNo.replace(/^ADM-/, '');
+      const safeClassName = editing.className ?? '';
+      const safeAdmissionNo = editing.admissionNo ?? '';
+      const prefix = getAdmissionPrefix(safeClassName);
+      const suffix = safeAdmissionNo.startsWith(prefix)
+        ? safeAdmissionNo.slice(prefix.length)
+        : safeAdmissionNo.replace(/^ADM-/, '');
       setForm({
         admissionNo: `${prefix}${suffix}`,
-        name: editing.name,
-        fatherName: editing.fatherName,
-        motherName: editing.motherName,
-        mobile: editing.mobile,
-        email: editing.email,
-        gender: editing.gender as Gender,
-        dob: editing.dob.slice(0, 10),
-        className: editing.className,
-        section: editing.section,
-        address: editing.address,
+        name: editing.name ?? '',
+        fatherName: editing.fatherName ?? '',
+        motherName: editing.motherName ?? '',
+        mobile: editing.mobile ?? '',
+        email: editing.email ?? '',
+        gender: (editing.gender as Gender) ?? 'MALE',
+        dob: editing.dob?.slice(0, 10) ?? '',
+        className: safeClassName,
+        section: editing.section ?? 'A',
+        feeDiscountType: (editing as any).feeDiscountType ?? 'NONE',
+        address: editing.address ?? '',
         admissionDate: editing.admissionDate?.slice(0, 10) ?? '',
-        totalFee: editing.totalFee,
+        totalFee: editing.totalFee ?? 0,
       });
     } else {
       setForm(empty);
@@ -182,17 +263,10 @@ export function StudentFormModal({
   }, [form.className, editing]);
 
   useEffect(() => {
-    const computedTotal =
-      feeStructure.admissionFee +
-      feeStructure.monthlyFee +
-      feeStructure.examFee +
-      feeStructure.sportFee +
-      feeStructure.computerFee +
-      feeStructure.functionFee +
-      feeStructure.smartClassFee +
-      feeStructure.otherCharges;
-    setForm((current) => (current.totalFee === computedTotal ? current : { ...current, totalFee: computedTotal }));
-  }, [feeStructure]);
+    const applied = applyDiscounts(feeStructure, form.feeDiscountType);
+    setAppliedFeeStructure(applied);
+    setForm((current) => (current.totalFee === applied.totalFee ? current : { ...current, totalFee: applied.totalFee }));
+  }, [feeStructure, form.feeDiscountType]);
 
   const set = <K extends keyof FormState,>(key: K, value: FormState[K]) =>
     setForm((current) => {
@@ -219,16 +293,17 @@ export function StudentFormModal({
         dob: valid.dob,
         className: valid.className,
         section: valid.section,
+        feeDiscountType: valid.feeDiscountType,
         address: valid.address,
         admissionDate: valid.admissionDate,
-        admissionFee: feeStructure.admissionFee,
-        monthlyFee: feeStructure.monthlyFee,
-        examFee: feeStructure.examFee,
-        sportFee: feeStructure.sportFee,
-        computerFee: feeStructure.computerFee,
-        functionFee: feeStructure.functionFee,
-        smartClassFee: feeStructure.smartClassFee,
-        otherCharges: feeStructure.otherCharges,
+        admissionFee: appliedFeeStructure.admissionFee,
+        monthlyFee: appliedFeeStructure.monthlyFee,
+        examFee: appliedFeeStructure.examFee,
+        sportFee: appliedFeeStructure.sportFee,
+        computerFee: appliedFeeStructure.computerFee,
+        functionFee: appliedFeeStructure.functionFee,
+        smartClassFee: appliedFeeStructure.smartClassFee,
+        otherCharges: appliedFeeStructure.otherCharges,
       };
       if (editing) {
         void dispatch(updateStudent({ id: editing._id, payload: payload as any })).then(() => dispatch(fetchStudents()));
@@ -311,6 +386,16 @@ export function StudentFormModal({
           </Select>
           {errors.section ? <p className="mt-1 text-xs text-rose-500">{errors.section}</p> : null}
         </Field>
+        <Field label="Admission Type" required>
+          <Select value={form.feeDiscountType} onChange={(e) => set('feeDiscountType', e.target.value)}>
+            {DISCOUNT_TYPE_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </Select>
+          {errors.feeDiscountType ? <p className="mt-1 text-xs text-rose-500">{errors.feeDiscountType}</p> : null}
+        </Field>
         <Field label="Admission Date" required>
           <Input type="date" value={form.admissionDate} onChange={(e) => set('admissionDate', e.target.value)} />
           {errors.admissionDate ? <p className="mt-1 text-xs text-rose-500">{errors.admissionDate}</p> : null}
@@ -335,28 +420,28 @@ export function StudentFormModal({
               ) : null}
             </Field>
             <Field label="Admission Fee">
-              <Input type="text" value={String(feeStructure.admissionFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, admissionFee: Number(e.target.value) }))} />
+              <Input type="text" value={String(appliedFeeStructure.admissionFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, admissionFee: Number(e.target.value) }))} />
             </Field>
             <Field label="Monthly Fee">
-              <Input type="text" value={String(feeStructure.monthlyFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, monthlyFee: Number(e.target.value) }))} />
+              <Input type="text" value={String(appliedFeeStructure.monthlyFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, monthlyFee: Number(e.target.value) }))} />
             </Field>
             <Field label="Exam Fee">
-              <Input type="text" value={String(feeStructure.examFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, examFee: Number(e.target.value) }))} />
+              <Input type="text" value={String(appliedFeeStructure.examFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, examFee: Number(e.target.value) }))} />
             </Field>
             <Field label="Sport Fee">
-              <Input type="text" value={String(feeStructure.sportFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, sportFee: Number(e.target.value) }))} />
+              <Input type="text" value={String(appliedFeeStructure.sportFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, sportFee: Number(e.target.value) }))} />
             </Field>
             <Field label="Computer Fee">
-              <Input type="text" value={String(feeStructure.computerFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, computerFee: Number(e.target.value) }))} />
+              <Input type="text" value={String(appliedFeeStructure.computerFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, computerFee: Number(e.target.value) }))} />
             </Field>
             <Field label="Function Fee">
-              <Input type="text" value={String(feeStructure.functionFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, functionFee: Number(e.target.value) }))} />
+              <Input type="text" value={String(appliedFeeStructure.functionFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, functionFee: Number(e.target.value) }))} />
             </Field>
             <Field label="Smart Class Fee">
-              <Input type="text" value={String(feeStructure.smartClassFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, smartClassFee: Number(e.target.value) }))} />
+              <Input type="text" value={String(appliedFeeStructure.smartClassFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, smartClassFee: Number(e.target.value) }))} />
             </Field>
             <Field label="Other Charges">
-              <Input type="text" value={String(feeStructure.otherCharges)} onChange={(e) => setFeeStructure((current) => ({ ...current, otherCharges: Number(e.target.value) }))} />
+              <Input type="text" value={String(appliedFeeStructure.otherCharges)} onChange={(e) => setFeeStructure((current) => ({ ...current, otherCharges: Number(e.target.value) }))} />
             </Field>
             <Field label="Total Fee" required>
               <Input type="text" value={String(form.totalFee)} disabled />
@@ -372,4 +457,3 @@ export function StudentFormModal({
     </Modal>
   );
 }
-

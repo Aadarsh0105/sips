@@ -1,8 +1,3 @@
-
-
-
-
-import React from 'react';
 import { DownloadIcon, PrinterIcon } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';

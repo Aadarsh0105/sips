@@ -38,8 +38,8 @@ const adminNav: NavItem[] = [
 { to: '/admin/students', label: 'Students', icon: UsersIcon },
 { to: '/admin/receptionists', label: 'Receptionists', icon: UserCogIcon },
 { to: '/admin/fee-structures', label: 'Fee Structures', icon: Layers3Icon },
-{ to: '/admin/fees', label: 'Fee Management', icon: WalletIcon },
 { to: '/admin/history', label: 'Payment History', icon: ReceiptIcon },
+{ to: '/admin/fees', label: 'Fee Management', icon: WalletIcon },
 { to: '/admin/reports', label: 'Reports', icon: FileBarChart2Icon },
 { to: '/admin/settings', label: 'Settings', icon: SettingsIcon }];
 
