@@ -44,7 +44,7 @@ export const searchStudent = createAsyncThunk(
   "studentSearch/searchStudent",
   async (query: string, { rejectWithValue }) => {
     try {
-      const response = await api.get(`${API.STUDENTS}/search/${encodeURIComponent(query)}`);
+      const response = await api.get(`${API.STUDENTS}/search?search=${encodeURIComponent(query)}`);
       return response.data?.data as StudentSearchResult;
     } catch (error: any) {
       return rejectWithValue(

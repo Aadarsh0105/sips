@@ -19,6 +19,7 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { useData } from "../contexts/DataContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { formatDate } from "../lib/utils";
 
 const CAMPUS = "/0cff149f-67fb-4097-8cd3-d6d7bfb6e95a.jpg";
 
@@ -211,11 +212,13 @@ function StudentCard({ student }: { student: any }) {
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <InfoTile label="Date of Birth" value={formatDate(student.dob)} />
         <InfoTile label="Father Name" value={student.fatherName || "-"} />
         <InfoTile label="Mother Name" value={student.motherName || "-"} />
         <InfoTile label="Mobile" value={student.mobile || "-"} />
         <InfoTile label="Email" value={student.email || "-"} />
         <InfoTile label="Admission No" value={student.admissionNo || "-"} />
+        <InfoTile label="Monthly Fee" value={`₹${student.monthlyFee ?? 0}`} />
         <InfoTile label="Due Fee" value={`₹${student.dueFee ?? 0}`} />
       </div>
     </motion.div>

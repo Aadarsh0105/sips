@@ -26,12 +26,7 @@ const DISCOUNT_RULES = {
   girlsAdmissionPercent: Number(ENV.VITE_GIRLS_ADMISSION_DISCOUNT_PERCENT ?? 50),
 } as const;
 
-function getAdmissionPrefix(className: string) {
-  return className ? `ADM-${className}` : 'ADM-';
-}
-
 type FormState = {
-  admissionNo: string;
   name: string;
   fatherName: string;
   motherName: string;
@@ -66,7 +61,6 @@ type AppliedFeeStructureState = FeeStructureState & {
 };
 
 const schema: yup.ObjectSchema<any> = yup.object({
-  admissionNo: yup.string().required('Admission no is required'),
   name: yup.string().required('Student name is required'),
   fatherName: yup.string().required('Father name is required'),
   motherName: yup.string().required('Mother name is required'),
@@ -86,7 +80,6 @@ const schema: yup.ObjectSchema<any> = yup.object({
 });
 
 const empty: FormState = {
-  admissionNo: '',
   name: '',
   fatherName: '',
   motherName: '',
@@ -182,21 +175,10 @@ export function StudentFormModal({
   const [feeStructure, setFeeStructure] = useState<FeeStructureState>(emptyFeeStructure);
   const [appliedFeeStructure, setAppliedFeeStructure] = useState<AppliedFeeStructureState>(emptyAppliedFeeStructure);
 
-  const admissionPrefix = getAdmissionPrefix(form.className);
-  const admissionSuffix = form.admissionNo.startsWith(admissionPrefix)
-    ? form.admissionNo.slice(admissionPrefix.length)
-    : form.admissionNo;
-
   useEffect(() => {
     if (editing) {
       const safeClassName = editing.className ?? '';
-      const safeAdmissionNo = editing.admissionNo ?? '';
-      const prefix = getAdmissionPrefix(safeClassName);
-      const suffix = safeAdmissionNo.startsWith(prefix)
-        ? safeAdmissionNo.slice(prefix.length)
-        : safeAdmissionNo.replace(/^ADM-/, '');
       setForm({
-        admissionNo: `${prefix}${suffix}`,
         name: editing.name ?? '',
         fatherName: editing.fatherName ?? '',
         motherName: editing.motherName ?? '',
@@ -271,10 +253,6 @@ export function StudentFormModal({
   const set = <K extends keyof FormState,>(key: K, value: FormState[K]) =>
     setForm((current) => {
       const next = { ...current, [key]: value };
-      if (key === 'className') {
-        const classValue = String(value).trim();
-        next.admissionNo = classValue ? `${getAdmissionPrefix(classValue)}` : '';
-      }
       return next;
     });
 
@@ -283,7 +261,6 @@ export function StudentFormModal({
       const valid = await schema.validate(form, { abortEarly: false });
       setErrors({});
       const payload = {
-        admissionNo: valid.admissionNo,
         name: valid.name,
         fatherName: valid.fatherName,
         motherName: valid.motherName,
@@ -402,23 +379,6 @@ export function StudentFormModal({
         </Field>
         {form.className ? (
           <>
-            <Field label="Admission No" required>
-              <div className="flex items-stretch overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-900">
-                <span className="flex shrink-0 items-center whitespace-nowrap border-r border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                  {admissionPrefix}
-                </span>
-
-                <Input
-                  className="rounded-none border-0 shadow-none focus:ring-0"
-                  value={admissionSuffix}
-                  onChange={(e) => set('admissionNo', `${admissionPrefix}${e.target.value}`)}
-                />
-              </div>
-
-              {errors.admissionNo ? (
-                <p className="mt-1 text-xs text-rose-500">{errors.admissionNo}</p>
-              ) : null}
-            </Field>
             <Field label="Admission Fee">
               <Input type="text" value={String(appliedFeeStructure.admissionFee)} onChange={(e) => setFeeStructure((current) => ({ ...current, admissionFee: Number(e.target.value) }))} />
             </Field>
