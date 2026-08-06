@@ -41,6 +41,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
   const remaining = student?.dueFee ?? 0;
   const total = student?.totalFee ?? 0;
   const isLumpSumSeason = new Date().getMonth() + 1 <= 8;
+  const lumpSumLocked = Boolean(student?.lumpSumPaid);
 
   useEffect(() => {
     if (!open || !isLumpSumSeason || !studentId) {
@@ -121,15 +122,15 @@ export function PaymentModal({ student, open, onClose, onDone }: {
     <Modal open={open} size="lg" onClose={() => { reset(); onClose(); }} title="Accept Fee Payment" subtitle={`${student.name} · ${student.studentId}`}
       footer={
         <>
-          {isLumpSumSeason && preview?.eligible ? (
-            <Button variant="outline" onClick={() => submit(false, true)} disabled={remaining <= 0}>
+          {isLumpSumSeason && preview?.eligible && !lumpSumLocked ? (
+            <Button variant="outline" onClick={() => submit(false, true)}>
               Pay Lump Sum ({formatCurrency(preview.lumpSumAmount)})
             </Button>
           ) : null}
-          <Button variant="outline" onClick={() => submit(true)} disabled={remaining <= 0}>
+          <Button variant="outline" onClick={() => submit(true)} disabled={remaining <= 0 || lumpSumLocked}>
             Pay Full ({formatCurrency(remaining)})
           </Button>
-          <Button onClick={() => submit(false)} disabled={remaining <= 0}>
+          <Button onClick={() => submit(false)} disabled={remaining <= 0 || lumpSumLocked}>
             Make Payment
           </Button>
         </>
@@ -140,7 +141,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
         <SummaryTile label="Remaining" value={formatCurrency(remaining)} tone="text-rose-600" />
       </div>
 
-      {isLumpSumSeason && preview?.eligible ? (
+      {isLumpSumSeason && preview?.eligible && !lumpSumLocked ? (
         <div className="mb-4 rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm dark:border-brand-500/20 dark:bg-brand-500/10">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -159,7 +160,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
         </div>
       ) : null}
 
-      {remaining <= 0 ? (
+      {remaining <= 0 || lumpSumLocked ? (
         <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
           This student&apos;s fees are fully paid.
         </p>

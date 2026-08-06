@@ -46,6 +46,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
   const dispatch = useAppDispatch();
   const { payments } = useData();
   const students = useAppSelector((state) => state.students.items);
+  const studentList = Array.isArray(students) ? students : [];
   const loading = useAppSelector((state) => state.students.loading);
   const [params, setParams] = useSearchParams();
 
@@ -73,7 +74,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
   useEffect(() => {
     const focus = params.get('focus');
     if (focus) {
-      const student = students.find((item) => item._id === focus || item.studentId === focus);
+      const student = studentList.find((item) => item._id === focus || item.studentId === focus);
       if (student) {
         setDetail(student);
         setQuery(student.studentId);
@@ -82,11 +83,11 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
       setParams(params, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [students]);
+  }, [studentList]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return students.filter((student) => {
+    return studentList.filter((student) => {
       const matchesQuery =
         !q ||
         student.name.toLowerCase().includes(q) ||
@@ -96,7 +97,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
       const matchesClass = classFilter === 'all' || student.className === classFilter;
       return matchesQuery && matchesClass;
     });
-  }, [students, payments, query, classFilter]);
+  }, [studentList, payments, query, classFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const current = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -115,7 +116,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
     <div>
       <PageHeader
         title="Students"
-        subtitle={`${students.length} students enrolled`}
+        subtitle={`${studentList.length} students enrolled`}
         action={
           <>
             {/* <Button variant="outline" onClick={handleExport}>
@@ -229,7 +230,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
                         <ActionMenu
                           menuId={`students-action-menu-${student._id}`}
                           canManage={canManage}
-                          canPay={(student.dueFee ?? fee.remaining) > 0}
+                          canPay={(student.dueFee ?? fee.remaining) > 0 || isLumpSumAvailable(student)}
                           onView={() => setDetail(student)}
                           onHistory={() => setHistoryStudent(student)}
                           onPay={() => setPaying(student)}
@@ -440,4 +441,8 @@ function toLegacyStudent(student: StudentRecord) {
     dueDate: '',
     createdAt: student.createdAt,
   };
+}
+
+function isLumpSumAvailable(student: StudentRecord) {
+  return new Date().getMonth() + 1 <= 8 && (student.dueFee ?? 0) <= 0 && !student.lumpSumPaid;
 }

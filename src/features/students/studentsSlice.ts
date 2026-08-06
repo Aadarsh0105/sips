@@ -30,6 +30,7 @@ export interface StudentRecord {
   totalFee: number;
   paidFee: number;
   dueFee: number;
+  lumpSumPaid?: boolean;
   status: string;
   isDeleted: boolean;
   createdBy: string;
