@@ -19,6 +19,23 @@ export interface StudentSearchResult {
   totalFee: number;
   paidFee: number;
   dueFee: number;
+  lumpSumPreview?: {
+    studentId: string;
+    name: string;
+    feeDiscountType: string;
+    paymentType: string;
+    eligible: boolean;
+    discountType: string;
+    monthlyDiscountPercentage: number;
+    remainingMonths: number;
+    normalMonthlyFee: number;
+    lumpSumMonthlyFee: number;
+    remainingMonthlyAmount: number;
+    remainingOneTimeFees: number;
+    remainingAcademicFee: number;
+    additionalDiscount: number;
+    lumpSumAmount: number;
+  } | null;
   status: string;
   isDeleted: boolean;
   createdBy: string;

@@ -21,7 +21,7 @@ const DISCOUNT_TYPE_OPTIONS = [
 
 const FEE_START_FROM_OPTIONS = [
   { value: 'ADMISSION_DATE', label: 'From Admission Date' },
-  { value: 'NEXT_MONTH', label: 'From Next Month' },
+  { value: 'NEXT_MONTH', label: 'From Next Month of Admission' },
   { value: 'CUSTOM', label: 'Custom Date' },
 ] as const;
 
