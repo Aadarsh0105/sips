@@ -19,6 +19,12 @@ const DISCOUNT_TYPE_OPTIONS = [
   { value: 'GIRLS_SPECIAL', label: 'Girls Special' },
 ] as const;
 
+const FEE_START_FROM_OPTIONS = [
+  { value: 'ADMISSION_DATE', label: 'From Admission Date' },
+  { value: 'NEXT_MONTH', label: 'From Next Month' },
+  { value: 'CUSTOM', label: 'Custom Date' },
+] as const;
+
 const ENV = import.meta.env as Record<string, string | undefined>;
 const DISCOUNT_RULES = {
   siblingMonthlyPercent: Number(ENV.VITE_SIBLING_MONTHLY_DISCOUNT_PERCENT ?? 20),
@@ -36,6 +42,8 @@ type FormState = {
   dob: string;
   className: string;
   section: string;
+  feeStartFrom: string;
+  feeStartDate: string;
   feeDiscountType: string;
   address: string;
   admissionDate: string;
@@ -73,6 +81,12 @@ const schema: yup.ObjectSchema<any> = yup.object({
   dob: yup.string().required('Date of birth is required'),
   className: yup.string().required('Class is required'),
   section: yup.string().required('Section is required'),
+  feeStartFrom: yup.string().required('Fee start from is required'),
+  feeStartDate: yup.string().when('feeStartFrom', {
+    is: 'CUSTOM',
+    then: (schema) => schema.required('Fee start date is required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
   feeDiscountType: yup.string().required('Discount type is required'),
   address: yup.string().required('Address is required'),
   admissionDate: yup.string().required('Admission date is required'),
@@ -89,6 +103,8 @@ const empty: FormState = {
   dob: '',
   className: '',
   section: 'A',
+  feeStartFrom: 'ADMISSION_DATE',
+  feeStartDate: '',
   feeDiscountType: 'NONE',
   address: '',
   admissionDate: '',
@@ -188,6 +204,8 @@ export function StudentFormModal({
         dob: editing.dob?.slice(0, 10) ?? '',
         className: safeClassName,
         section: editing.section ?? 'A',
+        feeStartFrom: (editing as any).feeStartFrom ?? 'ADMISSION_DATE',
+        feeStartDate: (editing as any).feeStartDate?.slice(0, 10) ?? '',
         feeDiscountType: (editing as any).feeDiscountType ?? 'NONE',
         address: editing.address ?? '',
         admissionDate: editing.admissionDate?.slice(0, 10) ?? '',
@@ -270,6 +288,8 @@ export function StudentFormModal({
         dob: valid.dob,
         className: valid.className,
         section: valid.section,
+        feeStartFrom: valid.feeStartFrom,
+        feeStartDate: valid.feeStartDate,
         feeDiscountType: valid.feeDiscountType,
         address: valid.address,
         admissionDate: valid.admissionDate,
@@ -377,6 +397,22 @@ export function StudentFormModal({
           <Input type="date" value={form.admissionDate} onChange={(e) => set('admissionDate', e.target.value)} />
           {errors.admissionDate ? <p className="mt-1 text-xs text-rose-500">{errors.admissionDate}</p> : null}
         </Field>
+        <Field label="Fee Start From" required>
+          <Select value={form.feeStartFrom} onChange={(e) => set('feeStartFrom', e.target.value)}>
+            {FEE_START_FROM_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </Select>
+          {errors.feeStartFrom ? <p className="mt-1 text-xs text-rose-500">{errors.feeStartFrom}</p> : null}
+        </Field>
+        {form.feeStartFrom === 'CUSTOM' ? (
+          <Field label="Fee Start Date" required>
+            <Input type="date" value={form.feeStartDate} onChange={(e) => set('feeStartDate', e.target.value)} />
+            {errors.feeStartDate ? <p className="mt-1 text-xs text-rose-500">{errors.feeStartDate}</p> : null}
+          </Field>
+        ) : null}
         {form.className ? (
           <>
             <Field label="Admission Fee">
