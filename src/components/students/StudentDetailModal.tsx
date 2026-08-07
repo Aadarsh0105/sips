@@ -4,6 +4,7 @@ import {
   MailIcon,
   MapPinIcon,
   PhoneIcon,
+  WalletIcon,
   UserIcon,
   FileTextIcon,
 } from 'lucide-react';
@@ -20,12 +21,16 @@ export function StudentDetailModal({
   onClose,
   onViewReceipt,
   onViewHistory,
+  onPay,
+  hideHistory = false,
 }: {
   student: StudentRecord | null;
   open: boolean;
   onClose: () => void;
   onViewReceipt?: (p: Payment) => void;
   onViewHistory?: () => void;
+  onPay?: () => void;
+  hideHistory?: boolean;
 }) {
   if (!student) return null;
 
@@ -84,7 +89,16 @@ export function StudentDetailModal({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {onViewHistory ? (
+          {onPay ? (
+            <button
+              type="button"
+              onClick={onPay}
+              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+            >
+              <WalletIcon className="h-4 w-4" /> Pay Fee
+            </button>
+          ) : null}
+          {!hideHistory && onViewHistory ? (
             <button
               type="button"
               onClick={onViewHistory}

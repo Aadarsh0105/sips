@@ -46,7 +46,7 @@ export interface StudentSearchResult {
 }
 
 interface StudentSearchState {
-  student: StudentSearchResult | null;
+  student: StudentSearchResult[] | null;
   loading: boolean;
   error: string | null;
 }
@@ -62,7 +62,7 @@ export const searchStudent = createAsyncThunk(
   async (query: string, { rejectWithValue }) => {
     try {
       const response = await api.get(`${API.STUDENTS}/search?search=${encodeURIComponent(query)}`);
-      return response.data?.data as StudentSearchResult;
+      return (response.data?.data ?? []) as StudentSearchResult[];
     } catch (error: any) {
       return rejectWithValue(
         error?.response?.data?.message ?? "Unable to find student"
