@@ -41,7 +41,7 @@ const adminNav: NavItem[] = [
 { to: '/admin/history', label: 'Payment History', icon: ReceiptIcon },
 // { to: '/admin/fees', label: 'Fee Management', icon: WalletIcon },
 { to: '/admin/reports', label: 'Reports', icon: FileBarChart2Icon },
-// { to: '/admin/settings', label: 'Settings', icon: SettingsIcon }
+{ to: '/admin/settings', label: 'Settings', icon: SettingsIcon }
 ];
 
 
