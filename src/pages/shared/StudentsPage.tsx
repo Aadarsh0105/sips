@@ -9,6 +9,7 @@ import {
   WalletIcon,
   PencilIcon,
   Trash2Icon,
+  GraduationCapIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../api/axios';
@@ -64,6 +65,9 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
   const [feeForm, setFeeForm] = useState({ examFee: 0, sportFee: 0, computerFee: 0 });
   const [receipt, setReceipt] = useState<Payment | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StudentRecord | null>(null);
+  const [promoteTarget, setPromoteTarget] = useState<StudentRecord | null>(null);
+  const [promoteForm, setPromoteForm] = useState({ toClass: '', section: 'A', remarks: '' });
+  const [promoting, setPromoting] = useState(false);
 
   const classes = CLASS_OPTIONS;
 
@@ -238,6 +242,10 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
                             setEditing(student);
                             setFormOpen(true);
                           }}
+                          onPromote={() => {
+                            setPromoteTarget(student);
+                            setPromoteForm({ toClass: '', section: student.section || 'A', remarks: '' });
+                          }}
                           onDelete={() => setDeleteTarget(student)}
                         />
                       </td>
@@ -310,6 +318,75 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
         </div>
       </Modal>
       <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />
+      <Modal
+        open={!!promoteTarget}
+        onClose={() => setPromoteTarget(null)}
+        title="Promote Student"
+        subtitle={promoteTarget ? `${promoteTarget.name} · ${promoteTarget.studentId}` : ''}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPromoteTarget(null)}>Cancel</Button>
+            <Button
+              disabled={promoting}
+              onClick={async () => {
+                if (!promoteTarget) return;
+                if (!promoteForm.toClass) {
+                  toast.error('Please select the class to promote to.');
+                  return;
+                }
+                if (!promoteForm.section) {
+                  toast.error('Please select a section.');
+                  return;
+                }
+                try {
+                  setPromoting(true);
+                  await api.post(`${API.STUDENTS}/promote`, {
+                    studentId: promoteTarget.studentId,
+                    toClass: promoteForm.toClass,
+                    section: promoteForm.section,
+                    remarks: promoteForm.remarks.trim(),
+                  });
+                  toast.success('Student promoted successfully.');
+                  setPromoteTarget(null);
+                  await dispatch(fetchStudents());
+                } catch (error: any) {
+                  toast.error(error?.response?.data?.message ?? 'Unable to promote student.');
+                } finally {
+                  setPromoting(false);
+                }
+              }}
+            >
+              {promoting ? 'Promoting...' : 'Promote Student'}
+            </Button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Promote To Class" required>
+            <Select value={promoteForm.toClass} onChange={(e) => setPromoteForm((form) => ({ ...form, toClass: e.target.value }))}>
+              <option value="">Select Class</option>
+              {CLASS_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value} disabled={item.value === promoteTarget?.className}>
+                  {item.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Section" required>
+            <Select value={promoteForm.section} onChange={(e) => setPromoteForm((form) => ({ ...form, section: e.target.value }))}>
+              {['A', 'B', 'C', 'D'].map((section) => <option key={section} value={section}>{section}</option>)}
+            </Select>
+          </Field>
+          <Field label="Remarks" className="sm:col-span-2">
+            <Input
+              type="text"
+              placeholder="Promoted to the next class"
+              value={promoteForm.remarks}
+              onChange={(e) => setPromoteForm((form) => ({ ...form, remarks: e.target.value }))}
+            />
+          </Field>
+        </div>
+      </Modal>
       <CommonConfirmModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -335,6 +412,7 @@ function ActionMenu({
   onHistory,
   onPay,
   onEdit,
+  onPromote,
   onDelete,
 }: {
   menuId: string;
@@ -344,6 +422,7 @@ function ActionMenu({
   onHistory: () => void;
   onPay: () => void;
   onEdit: () => void;
+  onPromote: () => void;
   onDelete: () => void;
 }) {
   const { rootRef, open, toggle, close } = useExclusiveMenu(menuId);
@@ -393,6 +472,14 @@ function ActionMenu({
           </button> */}
           {canManage ? (
             <>
+              <button
+                onClick={() => {
+                  close();
+                  onPromote();
+                }}
+                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+                <GraduationCapIcon className="h-4 w-4 text-violet-500" /> Promote
+              </button>
               <button
                 onClick={() => {
                   close();
