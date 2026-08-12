@@ -13,7 +13,7 @@ import { PageHeader } from '../../components/layout/PageHeader';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
-import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { CommonConfirmModal } from '../../components/ui/CommonConfirmModal';
 import { Field, Input } from '../../components/ui/Input';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
@@ -251,7 +251,7 @@ export function ReceptionistsPage() {
         </div>
       </Modal>
 
-      <ConfirmDialog
+      <CommonConfirmModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => {

@@ -20,7 +20,7 @@ import { Field, Input, Select } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Pagination } from '../../components/ui/Pagination';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { CommonConfirmModal } from '../../components/ui/CommonConfirmModal';
 import { StudentFormModal } from '../../components/shared/StudentFormModal';
 import { StudentDetailModal } from '../../components/students/StudentDetailModal';
 import { StudentPaymentHistoryModal } from '../../components/students/StudentPaymentHistoryModal';
@@ -310,7 +310,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
         </div>
       </Modal>
       <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />
-      <ConfirmDialog
+      <CommonConfirmModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => {

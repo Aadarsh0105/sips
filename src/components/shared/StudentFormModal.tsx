@@ -306,7 +306,7 @@ export function StudentFormModal({
         void dispatch(updateStudent({ id: editing._id, payload: payload as any })).then(() => dispatch(fetchStudents()));
         toast.success('Student updated successfully.');
       } else {
-        void dispatch(createStudent(payload as any)).then(() => dispatch(fetchStudents()));
+        void dispatch(createStudent({ ...payload, openingDue: 0 } as any)).then(() => dispatch(fetchStudents()));
         toast.success('Student added successfully.');
       }
       onClose();

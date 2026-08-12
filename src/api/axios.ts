@@ -9,6 +9,17 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  const requestUrl = config.url ?? "";
+  const publicRequest =
+    requestUrl.includes("/api/students/search") ||
+    /^\/api\/students\/[^/]+$/.test(requestUrl) ||
+    requestUrl.includes("/api/fees/calculate") ||
+    requestUrl.includes("/api/fees/lump-sum-preview/") ||
+    requestUrl.includes("/api/fees/online/create-qr");
+  if (publicRequest) {
+    if (config.headers) delete config.headers.Authorization;
+    return config;
+  }
   try {
     const sessionRaw = localStorage.getItem("authSession");
     if (sessionRaw) {

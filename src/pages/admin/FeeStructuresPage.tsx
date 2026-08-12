@@ -5,7 +5,7 @@ import { PageHeader } from '../../components/layout/PageHeader';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { CommonConfirmModal } from '../../components/ui/CommonConfirmModal';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useExclusiveMenu } from '../../hooks/useExclusiveMenu';
@@ -109,7 +109,7 @@ export function FeeStructuresPage() {
         }}
       />
 
-      <ConfirmDialog
+      <CommonConfirmModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={async () => {

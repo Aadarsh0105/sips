@@ -3,7 +3,8 @@ import api from "../../api/axios";
 import { API } from "../../api/endpoints";
 
 export interface StudentSearchResult {
-  _id: string;
+  id?: string;
+  _id?: string;
   studentId: string;
   admissionNo: string;
   name: string;

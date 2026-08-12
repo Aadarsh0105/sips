@@ -37,6 +37,7 @@ export function StudentPortal() {
   const [searched, setSearched] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [selectedStudentDetail, setSelectedStudentDetail] = useState<StudentRecord | null>(null);
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [qrLoading, setQrLoading] = useState(false);
   const [qrData, setQrData] = useState<{
@@ -47,7 +48,8 @@ export function StudentPortal() {
     feeHead: string;
     lumpSumDetails: any;
   } | null>(null);
-  const [paymentForm, setPaymentForm] = useState({ paymentType: "REGULAR", amount: "" });
+  const [paymentForm, setPaymentForm] = useState({ paymentType: "REGULAR", amount: "", feeHeads: ["ALL"] as string[] });
+  const [feeCalculation, setFeeCalculation] = useState<any | null>(null);
 
   const lumpSumPreview = selectedStudent?.lumpSumPreview ?? null;
   const currentMonth = new Date().getMonth() + 1;
@@ -71,8 +73,16 @@ export function StudentPortal() {
     toast.error((resultAction.payload as string) ?? "No student found.");
   };
 
-  const openPaymentModal = () => {
+  const openPaymentModal = async () => {
     if (!selectedStudent) return;
+    try {
+      const response = await api.post(`${API.FEES}/calculate`, { studentId: selectedStudent.studentId, feeHead: "ALL" });
+      setFeeCalculation(response?.data?.data ?? null);
+    } catch {
+      setFeeCalculation(null);
+      toast.error("Unable to calculate payable fees.");
+      return;
+    }
     setPaymentForm({
       paymentType: canShowLumpSum ? "LUMP_SUM" : "REGULAR",
       amount: String(
@@ -80,8 +90,29 @@ export function StudentPortal() {
           ? (lumpSumPreview?.lumpSumAmount ?? selectedStudent.dueFee ?? selectedStudent.totalFee)
           : (selectedStudent.dueFee || selectedStudent.totalFee)
       ),
+      feeHeads: ["ALL"],
     });
     setQrOpen(true);
+  };
+
+  const openStudentDetails = async (item: any) => {
+    const recordId = item.id ?? item._id;
+    if (!recordId) {
+      toast.error('Student record ID is missing.');
+      return;
+    }
+    try {
+      setDetailLoadingId(item.studentId);
+      const response = await api.get(`${API.STUDENTS}/${recordId}`);
+      const detail = response?.data?.data;
+      if (!detail) throw new Error('Student details not found');
+      setSelectedStudent({ ...item, ...detail, lumpSumPreview: item.lumpSumPreview });
+      setSelectedStudentDetail(detail as StudentRecord);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message ?? 'Unable to load student details.');
+    } finally {
+      setDetailLoadingId(null);
+    }
   };
 
   const createQr = async () => {
@@ -91,12 +122,36 @@ export function StudentPortal() {
       toast.error("Enter a valid amount.");
       return;
     }
+    const isLumpSum = paymentForm.paymentType === "LUMP_SUM";
+    const selectedDue = paymentForm.feeHeads.includes("ALL")
+      ? Number(feeCalculation?.dueFee ?? selectedStudent.dueFee ?? 0)
+      : paymentForm.feeHeads.reduce((sum, head) => sum + Number(feeCalculation?.dueBreakdown?.[head] ?? 0), 0);
+    if (!isLumpSum && !paymentForm.feeHeads.length) {
+      toast.error("Select at least one fee head.");
+      return;
+    }
+    if (!isLumpSum && amount > selectedDue) {
+      toast.error(`Amount cannot exceed ₹${selectedDue}.`);
+      return;
+    }
+    const selectedHeads = paymentForm.feeHeads.includes("ALL")
+      ? Object.keys(feeCalculation?.dueBreakdown ?? {}).filter((head) => head !== "ALL")
+      : paymentForm.feeHeads;
+    let balance = amount;
+    const feeBreakdown = selectedHeads.reduce<Record<string, number>>((breakdown, head) => {
+      const due = Number(feeCalculation?.dueBreakdown?.[head] ?? 0);
+      const allocated = Math.min(due, balance);
+      if (allocated > 0) breakdown[head] = allocated;
+      balance -= allocated;
+      return breakdown;
+    }, {});
     try {
       setQrLoading(true);
       const response = await api.post(API.FEES_ONLINE_CREATE_QR, {
         studentId: selectedStudent.studentId,
-        feeHead: "MONTHLY",
+        feeHead: "ALL",
         amount,
+        ...(!isLumpSum ? { feeBreakdown } : {}),
         paymentType: paymentForm.paymentType,
       });
       const data = response?.data?.data;
@@ -209,8 +264,8 @@ export function StudentPortal() {
                   <div className="flex items-center gap-3 text-right">
                     <p className="text-xs text-slate-400">Due</p>
                     <p className="font-semibold text-slate-900 dark:text-white">₹{item.dueFee}</p>
-                    <Button size="sm" onClick={() => { setSelectedStudent(item); setSelectedStudentDetail(toStudentRecord(item)); }}>
-                      View
+                    <Button size="sm" disabled={detailLoadingId === item.studentId} onClick={() => void openStudentDetails(item)}>
+                      {detailLoadingId === item.studentId ? 'Loading...' : 'View'}
                     </Button>
                   </div>
                 </div>
@@ -236,6 +291,7 @@ export function StudentPortal() {
         onSubmit={createQr}
         canShowLumpSum={canShowLumpSum}
         lumpSumPreview={lumpSumPreview}
+        calculation={feeCalculation}
       />
 
       <QrPreviewModal open={Boolean(qrData)} qrData={qrData} student={selectedStudent} onClose={() => setQrData(null)} />
@@ -265,29 +321,86 @@ export function StudentPortal() {
   );
 }
 
-function GenerateQrModal({ open, onClose, student, form, loading, onChangeForm, onSubmit, canShowLumpSum, lumpSumPreview }: {
+function GenerateQrModal({ open, onClose, student, form, loading, onChangeForm, onSubmit, canShowLumpSum, lumpSumPreview, calculation }: {
   open: boolean;
   onClose: () => void;
   student: any;
-  form: { paymentType: string; amount: string };
+  form: { paymentType: string; amount: string; feeHeads: string[] };
   loading: boolean;
-  onChangeForm: React.Dispatch<React.SetStateAction<{ paymentType: string; amount: string }>>;
+  onChangeForm: React.Dispatch<React.SetStateAction<{ paymentType: string; amount: string; feeHeads: string[] }>>;
   onSubmit: () => void;
   canShowLumpSum: boolean;
   lumpSumPreview: any;
+  calculation: any;
 }) {
   if (!student) return null;
+  const regularPayment = form.paymentType === "REGULAR";
+  const selectedDue = form.feeHeads.includes("ALL")
+    ? Number(calculation?.dueFee ?? student.dueFee ?? 0)
+    : form.feeHeads.reduce((sum, head) => sum + Number(calculation?.dueBreakdown?.[head] ?? 0), 0);
+  const feeHeads = Object.keys(calculation?.dueBreakdown ?? {}).filter((head) => head !== "ALL" && Number(calculation?.dueBreakdown?.[head] ?? 0) > 0);
   return (
     <Modal open={open} onClose={onClose} title="Generate Payment QR" subtitle={`${student.name} · ${student.studentId}`} size="lg" footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={onSubmit} disabled={loading}>{loading ? "Generating..." : "Generate QR"}</Button></>}>
       <div className="space-y-4">
         <Field label="Payment Type" required>
-          <Select value={form.paymentType} onChange={(e) => onChangeForm((current) => ({ ...current, paymentType: e.target.value, amount: e.target.value === "LUMP_SUM" && canShowLumpSum ? String(lumpSumPreview?.lumpSumAmount ?? student.dueFee ?? student.totalFee) : String(student.dueFee || student.totalFee) }))}>
+          <Select value={form.paymentType} onChange={(e) => onChangeForm((current) => ({ ...current, paymentType: e.target.value, feeHeads: ["ALL"], amount: e.target.value === "LUMP_SUM" && canShowLumpSum ? String(lumpSumPreview?.lumpSumAmount ?? student.dueFee ?? student.totalFee) : String(calculation?.dueFee ?? student.dueFee ?? student.totalFee) }))}>
             <option value="REGULAR">Regular Payment</option>
             {canShowLumpSum ? <option value="LUMP_SUM">Lump Sum</option> : null}
           </Select>
         </Field>
+        {regularPayment ? (
+          <Field label="Select Fees" required>
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-700 sm:grid-cols-3">
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={form.feeHeads.includes("ALL")}
+                  onChange={() => onChangeForm((current) => ({ ...current, feeHeads: current.feeHeads.includes("ALL") ? [] : ["ALL"], amount: "" }))}
+                />
+                All Fees
+              </label>
+              {feeHeads.map((head) => {
+                const disabled = form.feeHeads.includes("ALL");
+                return (
+                  <label key={head} className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm ${disabled ? "cursor-not-allowed bg-slate-50 text-slate-400" : "cursor-pointer bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-200"}`}>
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        disabled={disabled}
+                        checked={form.feeHeads.includes(head)}
+                        onChange={() => onChangeForm((current) => ({
+                          ...current,
+                          feeHeads: current.feeHeads.includes(head) ? current.feeHeads.filter((item) => item !== head) : [...current.feeHeads, head],
+                          amount: "",
+                        }))}
+                      />
+                      {head.replace(/_/g, " ")}
+                    </span>
+                    <strong>₹{Number(calculation?.dueBreakdown?.[head] ?? 0).toLocaleString("en-IN")}</strong>
+                  </label>
+                );
+              })}
+            </div>
+          </Field>
+        ) : (
+          <div className="rounded-2xl border border-brand-200 bg-brand-50 p-4 dark:border-brand-500/30 dark:bg-brand-500/10">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Full-year Lump Sum</p>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">The complete lump-sum amount must be paid together.</p>
+            <p className="mt-2 font-display text-xl font-bold text-brand-700 dark:text-brand-300">₹{Number(lumpSumPreview?.lumpSumAmount ?? 0).toLocaleString("en-IN")}</p>
+          </div>
+        )}
         <Field label="Amount" required>
-          <Input type="text" value={form.amount} disabled={form.paymentType === "LUMP_SUM"} onChange={(e) => onChangeForm((current) => ({ ...current, amount: e.target.value }))} />
+          <Input
+            type="text"
+            inputMode="decimal"
+            placeholder={regularPayment ? `Up to ${selectedDue}` : undefined}
+            value={form.amount}
+            disabled={!regularPayment}
+            onChange={(e) => {
+              if (/^\d*(\.\d{0,2})?$/.test(e.target.value)) onChangeForm((current) => ({ ...current, amount: e.target.value }));
+            }}
+          />
+          {regularPayment ? <p className="mt-1 text-xs text-slate-500">Maximum payable: ₹{selectedDue.toLocaleString("en-IN")}</p> : null}
         </Field>
         <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-800/50 dark:text-slate-300">After generating the QR, you’ll see the payment code with the exact amount and can scan it to pay securely.</div>
       </div>
@@ -311,45 +424,6 @@ function QrPreviewModal({ open, qrData, student, onClose }: { open: boolean; qrD
       </div>
     </Modal>
   );
-}
-
-function toStudentRecord(student: any): StudentRecord {
-  return {
-    _id: student._id ?? student.studentId,
-    studentId: student.studentId,
-    admissionNo: student.admissionNo ?? "",
-    name: student.name ?? "",
-    fatherName: student.fatherName ?? "",
-    motherName: student.motherName ?? "",
-    mobile: student.mobile ?? "",
-    email: student.email ?? "",
-    gender: student.gender ?? "MALE",
-    dob: student.dob ?? "",
-    className: student.className ?? "",
-    section: student.section ?? "",
-    address: student.address ?? "",
-    admissionDate: student.admissionDate ?? "",
-    feeStartDate: student.feeStartDate,
-    admissionFee: student.admissionFee,
-    monthlyFee: student.monthlyFee,
-    examFee: student.examFee,
-    sportFee: student.sportFee,
-    computerFee: student.computerFee,
-    functionFee: student.functionFee,
-    smartClassFee: student.smartClassFee,
-    otherCharges: student.otherCharges,
-    openingDue: student.openingDue,
-    totalFee: student.totalFee ?? 0,
-    paidFee: student.paidFee ?? 0,
-    dueFee: student.dueFee ?? 0,
-    lumpSumPaid: student.lumpSumPaid,
-    status: student.status ?? "ACTIVE",
-    isDeleted: false,
-    createdBy: student.createdBy ?? "",
-    createdAt: student.createdAt ?? new Date().toISOString(),
-    updatedAt: student.updatedAt ?? new Date().toISOString(),
-    __v: student.__v ?? 0,
-  };
 }
 
 function InfoTile({ label, value }: { label: string; value: string }) {

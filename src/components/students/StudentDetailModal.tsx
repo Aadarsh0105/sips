@@ -34,11 +34,14 @@ export function StudentDetailModal({
 }) {
   if (!student) return null;
 
+  const promotionHistory = Array.isArray((student as any).classPromotionHistory) ? (student as any).classPromotionHistory : [];
+  const lateFeeWaivers = Array.isArray((student as any).lateFeeWaivers) ? (student as any).lateFeeWaivers : [];
+
   return (
     <Modal
       open={open}
       onClose={onClose}
-      size="xl"
+      size="xxl"
       title="Student Profile"
       subtitle={`Admission ${student.admissionNo || '�'} · Student ${student.studentId}`}
       footer={null}
@@ -69,6 +72,8 @@ export function StudentDetailModal({
         </div>
 
         <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+          <Info icon={CalendarIcon} label="Student ID" value={student.studentId} />
+          <Info icon={CalendarIcon} label="Status" value={student.status || 'ACTIVE'} className="capitalize" />
           <Info icon={UserIcon} label="Father's Name" value={student.fatherName} />
           <Info icon={UserIcon} label="Mother's Name" value={student.motherName} />
           <Info icon={CalendarIcon} label="Date of Birth" value={formatDate(student.dob)} />
@@ -77,16 +82,80 @@ export function StudentDetailModal({
           <Info icon={MailIcon} label="Email" value={student.email || '�'} />
           <Info icon={CalendarIcon} label="Admission Date" value={formatDate(student.admissionDate || '')} />
           <Info icon={CalendarIcon} label="Fee Start Date" value={student.feeStartDate ? formatDate(student.feeStartDate) : '�'} />
+          <Info icon={CalendarIcon} label="Fee Start From" value={(student as any).feeStartFrom || '�'} />
+          <Info icon={CalendarIcon} label="Fee Discount Type" value={(student as any).feeDiscountType || 'NONE'} />
           <Info icon={MapPinIcon} label="Address" value={student.address || '�'} />
           <Info icon={CalendarIcon} label="Admission No" value={student.admissionNo || '�'} />
         </div>
 
         <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-200 p-4 sm:grid-cols-4 dark:border-slate-800">
+          <MiniStat label="Admission Fee" value={formatCurrency((student as any).admissionFee ?? 0)} />
           <MiniStat label="Total Fee" value={formatCurrency(student.totalFee)} />
           <MiniStat label="Monthly Fee" value={formatCurrency(student.monthlyFee ?? 0)} tone="text-slate-700" />
           <MiniStat label="Due Fee" value={formatCurrency(student.dueFee ?? 0)} tone="text-rose-600" />
           <MiniStat label="Paid Fee" value={formatCurrency(student.paidFee ?? 0)} tone="text-emerald-600" />
+          <MiniStat label="Exam Fee" value={formatCurrency((student as any).examFee ?? 0)} />
+          <MiniStat label="Sport Fee" value={formatCurrency((student as any).sportFee ?? 0)} />
+          <MiniStat label="Computer Fee" value={formatCurrency((student as any).computerFee ?? 0)} />
+          <MiniStat label="Function Fee" value={formatCurrency((student as any).functionFee ?? 0)} />
+          <MiniStat label="Smart Class Fee" value={formatCurrency((student as any).smartClassFee ?? 0)} />
+          <MiniStat label="Other Charges" value={formatCurrency((student as any).otherCharges ?? 0)} />
+          <MiniStat label="Opening Due" value={formatCurrency((student as any).openingDue ?? 0)} />
+          <MiniStat label="Lump Sum Paid" value={(student as any).lumpSumPaid ? 'Yes' : 'No'} tone={(student as any).lumpSumPaid ? 'text-emerald-600' : 'text-slate-600'} />
+          <MiniStat label="Lump Sum Discount Type" value={(student as any).lumpSumDiscountType || 'NONE'} />
+          <MiniStat label="Lump Sum Discount %" value={`${(student as any).lumpSumDiscountPercent ?? 0}%`} />
+          <MiniStat label="Lump Sum Discount Amount" value={formatCurrency((student as any).lumpSumDiscountAmount ?? 0)} />
+          <MiniStat label="Late Fee Waived" value={(student as any).lateFeeWaived ? 'Yes' : 'No'} tone={(student as any).lateFeeWaived ? 'text-emerald-600' : 'text-slate-600'} />
+          <MiniStat label="Late Fee Waiver Amount" value={formatCurrency((student as any).lateFeeWaiverAmount ?? 0)} />
         </div>
+
+        {promotionHistory.length > 0 ? (
+          <div className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <h4 className="font-display text-sm font-semibold text-slate-900 dark:text-white">Class Promotion History</h4>
+              <span className="text-xs text-slate-400">{promotionHistory.length} records</span>
+            </div>
+            <div className="space-y-3">
+              {promotionHistory.map((item: any) => (
+                <div key={item._id} className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800/50">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">
+                      {item.fromClass} → {item.toClass} ({item.fromSection} → {item.toSection})
+                    </p>
+                    <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-semibold text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
+                      {item.status || 'APPLIED'}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-slate-500 dark:text-slate-400">{item.remarks || 'No remarks'}</p>
+                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <MiniStat label="Applied At" value={formatDate(item.appliedAt || item.effectiveFrom || '')} />
+                    <MiniStat label="Promoted At" value={formatDate(item.promotedAt || '')} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {lateFeeWaivers.length > 0 ? (
+          <div className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <h4 className="font-display text-sm font-semibold text-slate-900 dark:text-white">Late Fee Waivers</h4>
+              <span className="text-xs text-slate-400">{lateFeeWaivers.length} records</span>
+            </div>
+            <div className="space-y-3">
+              {lateFeeWaivers.map((item: any, index: number) => (
+                <div key={item._id ?? index} className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800/50">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <MiniStat label="Amount" value={formatCurrency(item.amount ?? 0)} />
+                    <MiniStat label="Reason" value={item.reason || '—'} />
+                    <MiniStat label="Applied At" value={formatDate(item.appliedAt || item.createdAt || '')} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="flex flex-wrap gap-2">
           {onPay ? (
