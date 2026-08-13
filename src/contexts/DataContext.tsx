@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { ensureSeed, store } from '../lib/storage';
+import { initializeSettings, store } from '../lib/storage';
 import type {
   AppNotification,
   NotificationType,
@@ -53,7 +53,7 @@ interface DataCtx {
 const Ctx = createContext<DataCtx | null>(null);
 
 export function DataProvider({ children }: {children: React.ReactNode;}) {
-  ensureSeed();
+  initializeSettings();
   const [students, setStudents] = useState<Student[]>(() => store.getStudents());
   const [payments, setPayments] = useState<Payment[]>(() => store.getPayments());
   const [users, setUsers] = useState<User[]>(() => store.getUsers());

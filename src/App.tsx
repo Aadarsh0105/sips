@@ -31,6 +31,7 @@ import { ReceptionDashboard } from './pages/reception/ReceptionDashboard';
 import { StudentsPage } from './pages/shared/StudentsPage';
 import { FeeManagementPage } from './pages/shared/FeeManagementPage';
 import { PaymentHistoryPage } from './pages/shared/PaymentHistoryPage';
+import { StudentDetailsPage } from './pages/shared/StudentDetailsPage';
 import { store } from './app/store';
 
 const adminNav: NavItem[] = [
@@ -73,6 +74,7 @@ export function App() {
                 
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/students" element={<StudentsPage canManage />} />
+                <Route path="/admin/student/:id" element={<StudentDetailsPage />} />
                 <Route path="/admin/receptionists" element={<ReceptionistsPage />} />
                 <Route path="/admin/fee-structures" element={<FeeStructuresPage />} />
                 <Route path="/admin/fees" element={<FeeManagementPage />} />
@@ -95,6 +97,7 @@ export function App() {
                 
                 <Route path="/reception" element={<ReceptionDashboard />} />
                 <Route path="/reception/students" element={<StudentsPage canManage={false} />} />
+                <Route path="/reception/student/:id" element={<StudentDetailsPage />} />
                 <Route path="/reception/fees" element={<FeeManagementPage />} />
                 <Route path="/reception/history" element={<PaymentHistoryPage />} />
               </Route>

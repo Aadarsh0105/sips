@@ -75,6 +75,7 @@ type FeeCalculation = {
 const ALLOWED_FEE_HEADS = [
   'ADMISSION',
   'MONTHLY',
+  'BUS',
   'EXAM',
   'SPORT',
   'COMPUTER',
@@ -167,6 +168,12 @@ export function PaymentModal({ student, open, onClose, onDone }: {
   const selectedFeeDue = feeHeads.includes('ALL')
     ? Number(calculation?.dueFee ?? remaining)
     : feeHeads.reduce((sum, head) => sum + Number(calculation?.dueBreakdown?.[head] ?? 0), 0);
+  const hasPayableLumpSum = Boolean(
+    isLumpSumSeason &&
+    preview?.eligible &&
+    Number(preview?.lumpSumAmount ?? 0) > 0 &&
+    !lumpSumLocked
+  );
   const canPaySelectedFee = selectedFeeDue > 0 && !lumpSumLocked;
   const reset = () => {
     setAmount('');
@@ -258,7 +265,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
     <Modal open={open} size="lg" onClose={() => { reset(); onClose(); }} title="Accept Fee Payment" subtitle={`${student.name} · ${student.studentId}`}
       footer={
         <>
-          {isLumpSumSeason && preview?.eligible && !lumpSumLocked ? (
+          {hasPayableLumpSum ? (
             <Button variant="outline" onClick={() => requestPayment(false, true)}>
               Pay Lump Sum ({formatCurrency(preview.lumpSumAmount)})
             </Button>
@@ -323,7 +330,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
         </div>
       ) : null}
 
-      {isLumpSumSeason && preview?.eligible && !lumpSumLocked ? (
+      {hasPayableLumpSum ? (
         <div className="mb-4 rounded-2xl border border-brand-200 bg-brand-50 p-4 dark:border-brand-500/20 dark:bg-brand-500/10">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -339,12 +346,17 @@ export function PaymentModal({ student, open, onClose, onDone }: {
         </div>
       ) : null}
 
-      {remaining <= 0 || lumpSumLocked ? (
+      {(remaining <= 0 || lumpSumLocked) && !hasPayableLumpSum ? (
         <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
           This student&apos;s fees are fully paid.
         </p>
       ) : (
         <div className="space-y-4">
+          {remaining <= 0 && hasPayableLumpSum ? (
+            <p className="rounded-lg bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
+              Current accrued fees are paid. The lump sum amount includes remaining future academic or bus fees.
+            </p>
+          ) : null}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label="Fee Head" required>
               <div ref={feeHeadRef} className="relative">

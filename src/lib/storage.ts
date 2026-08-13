@@ -1,12 +1,8 @@
 
 import type { User, Student, Payment, SchoolSettings, AppNotification } from './types';
-import {
-  seedUsers,
-  makeSeedStudents,
-  makeSeedPayments,
-  seedSettings,
-  seedNotifications } from
-'./seed';
+import settingsData from '../data/settings.json';
+
+const defaultSettings = settingsData as SchoolSettings;
 
 const KEYS = {
   users: 'sfms.users',
@@ -44,22 +40,8 @@ export interface Sequences {
   invoice: number;
 }
 
-export function ensureSeed(): void {
-  if (!localStorage.getItem(KEYS.students)) {
-    const students = makeSeedStudents();
-    const payments = makeSeedPayments(students);
-    write(KEYS.users, seedUsers);
-    write(KEYS.students, students);
-    write(KEYS.payments, payments);
-    write(KEYS.settings, seedSettings);
-    write(KEYS.notifications, seedNotifications);
-    write<Sequences>(KEYS.seq, {
-      student: students.length + 1,
-      admission: 1000 + students.length,
-      receipt: payments.length + 1,
-      invoice: payments.length + 1
-    });
-  }
+export function initializeSettings(): void {
+  if (!localStorage.getItem(KEYS.settings)) write(KEYS.settings, defaultSettings);
 }
 
 export const store = {
@@ -70,7 +52,7 @@ export const store = {
   setStudents: (s: Student[]) => write(KEYS.students, s),
   getPayments: () => read<Payment[]>(KEYS.payments, []),
   setPayments: (p: Payment[]) => write(KEYS.payments, p),
-  getSettings: () => read<SchoolSettings>(KEYS.settings, seedSettings),
+  getSettings: () => read<SchoolSettings>(KEYS.settings, defaultSettings),
   setSettings: (s: SchoolSettings) => write(KEYS.settings, s),
   getNotifications: () => read<AppNotification[]>(KEYS.notifications, []),
   setNotifications: (n: AppNotification[]) => write(KEYS.notifications, n),
@@ -88,6 +70,6 @@ export const store = {
     Object.values(KEYS).forEach((k) => {
       if (k !== KEYS.theme) localStorage.removeItem(k);
     });
-    ensureSeed();
+    write(KEYS.settings, defaultSettings);
   }
 };

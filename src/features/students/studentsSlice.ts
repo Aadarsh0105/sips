@@ -27,6 +27,10 @@ export interface StudentRecord {
   smartClassFee?: number;
   otherCharges?: number;
   openingDue?: number;
+  hasBusFacility?: boolean;
+  busFee?: number;
+  busFacilityHistory?: Record<string, unknown>[];
+  busFeeRefunds?: Record<string, unknown>[];
   totalFee: number;
   paidFee: number;
   dueFee: number;

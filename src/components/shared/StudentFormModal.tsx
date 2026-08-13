@@ -48,6 +48,8 @@ type FormState = {
   address: string;
   admissionDate: string;
   totalFee: number;
+  hasBusFacility: boolean;
+  busFee: number;
 };
 
 type FeeStructureState = {
@@ -91,6 +93,12 @@ const schema: yup.ObjectSchema<any> = yup.object({
   address: yup.string().required('Address is required'),
   admissionDate: yup.string().required('Admission date is required'),
   totalFee: yup.number().typeError('Total fee must be a number').min(0, 'Total fee cannot be negative').required(),
+  hasBusFacility: yup.boolean().required(),
+  busFee: yup.number().when('hasBusFacility', {
+    is: true,
+    then: (schema) => schema.typeError('Bus fee must be a number').min(0, 'Bus fee cannot be negative').required('Bus fee is required'),
+    otherwise: (schema) => schema.default(0),
+  }),
 });
 
 const empty: FormState = {
@@ -109,6 +117,8 @@ const empty: FormState = {
   address: '',
   admissionDate: '',
   totalFee: 0,
+  hasBusFacility: false,
+  busFee: 0,
 };
 
 const emptyFeeStructure: FeeStructureState = {
@@ -210,6 +220,8 @@ export function StudentFormModal({
         address: editing.address ?? '',
         admissionDate: editing.admissionDate?.slice(0, 10) ?? '',
         totalFee: editing.totalFee ?? 0,
+        hasBusFacility: Boolean((editing as any).hasBusFacility),
+        busFee: Number((editing as any).busFee ?? 0),
       });
     } else {
       setForm(empty);
@@ -301,6 +313,8 @@ export function StudentFormModal({
         functionFee: appliedFeeStructure.functionFee,
         smartClassFee: appliedFeeStructure.smartClassFee,
         otherCharges: appliedFeeStructure.otherCharges,
+        hasBusFacility: valid.hasBusFacility,
+        busFee: valid.hasBusFacility ? Number(valid.busFee ?? 0) : 0,
       };
       if (editing) {
         void dispatch(updateStudent({ id: editing._id, payload: payload as any })).then(() => dispatch(fetchStudents()));
@@ -444,6 +458,32 @@ export function StudentFormModal({
               {errors.totalFee ? <p className="mt-1 text-xs text-rose-500">{errors.totalFee}</p> : null}
             </Field>
           </>
+        ) : null}
+        <Field label="Bus Facility" required>
+          <Select
+            value={form.hasBusFacility ? 'YES' : 'NO'}
+            onChange={(e) => {
+              const enabled = e.target.value === 'YES';
+              set('hasBusFacility', enabled);
+              if (!enabled) set('busFee', 0);
+            }}
+          >
+            <option value="NO">No Bus Facility</option>
+            <option value="YES">Uses School Bus</option>
+          </Select>
+        </Field>
+        {form.hasBusFacility ? (
+          <Field label="Bus Fee" required>
+            <Input
+              type="text"
+              inputMode="decimal"
+              value={String(form.busFee)}
+              onChange={(e) => {
+                if (/^\d*(\.\d{0,2})?$/.test(e.target.value)) set('busFee', Number(e.target.value || 0));
+              }}
+            />
+            {errors.busFee ? <p className="mt-1 text-xs text-rose-500">{errors.busFee}</p> : null}
+          </Field>
         ) : null}
         <Field label="Address" className="sm:col-span-3" required>
           <Textarea value={form.address} onChange={(e) => set('address', e.target.value)} />

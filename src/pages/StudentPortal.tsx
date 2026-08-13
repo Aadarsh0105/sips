@@ -21,6 +21,7 @@ import { Button } from "../components/ui/Button";
 import { Field, Input, Select } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
 import { StudentDetailModal } from "../components/students/StudentDetailModal";
+import { StudentChatbot } from "../components/portal/StudentChatbot";
 import { useData } from "../contexts/DataContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { formatDate } from "../lib/utils";
@@ -50,8 +51,9 @@ export function StudentPortal() {
   } | null>(null);
   const [paymentForm, setPaymentForm] = useState({ paymentType: "REGULAR", amount: "", feeHeads: ["ALL"] as string[] });
   const [feeCalculation, setFeeCalculation] = useState<any | null>(null);
+  const [paymentLumpSumPreview, setPaymentLumpSumPreview] = useState<any | null>(null);
 
-  const lumpSumPreview = selectedStudent?.lumpSumPreview ?? null;
+  const lumpSumPreview = paymentLumpSumPreview ?? selectedStudent?.lumpSumPreview ?? null;
   const currentMonth = new Date().getMonth() + 1;
   const isLumpSumSeason = currentMonth >= 3 && currentMonth <= 8;
   const canShowLumpSum = Boolean(selectedStudent && isLumpSumSeason && lumpSumPreview?.eligible);
@@ -76,22 +78,35 @@ export function StudentPortal() {
   const openPaymentModal = async () => {
     if (!selectedStudent) return;
     try {
-      const response = await api.post(`${API.FEES}/calculate`, { studentId: selectedStudent.studentId, feeHead: "ALL" });
-      setFeeCalculation(response?.data?.data ?? null);
+      const [calculationResponse, previewResponse] = await Promise.all([
+        api.post(`${API.FEES}/calculate`, { studentId: selectedStudent.studentId, feeHead: "ALL" }),
+        isLumpSumSeason
+          ? api.get(`${API.FEES}/lump-sum-preview/${selectedStudent.studentId}`).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      const calculationData = calculationResponse?.data?.data ?? null;
+      const previewData = previewResponse?.data?.data ?? null;
+      const lumpSumAvailable = Boolean(
+        isLumpSumSeason &&
+        previewData?.eligible &&
+        Number(previewData?.lumpSumAmount ?? 0) > 0
+      );
+      const regularDue = Number(calculationData?.dueFee ?? 0);
+      const defaultPaymentType = regularDue <= 0 && lumpSumAvailable ? "LUMP_SUM" : "REGULAR";
+      setFeeCalculation(calculationData);
+      setPaymentLumpSumPreview(previewData);
+      setSelectedStudent((current: any) => current ? { ...current, lumpSumPreview: previewData ?? current.lumpSumPreview } : current);
+      setPaymentForm({
+        paymentType: defaultPaymentType,
+        amount: String(defaultPaymentType === "LUMP_SUM" ? previewData.lumpSumAmount : regularDue),
+        feeHeads: ["ALL"],
+      });
     } catch {
       setFeeCalculation(null);
+      setPaymentLumpSumPreview(null);
       toast.error("Unable to calculate payable fees.");
       return;
     }
-    setPaymentForm({
-      paymentType: canShowLumpSum ? "LUMP_SUM" : "REGULAR",
-      amount: String(
-        canShowLumpSum
-          ? (lumpSumPreview?.lumpSumAmount ?? selectedStudent.dueFee ?? selectedStudent.totalFee)
-          : (selectedStudent.dueFee || selectedStudent.totalFee)
-      ),
-      feeHeads: ["ALL"],
-    });
     setQrOpen(true);
   };
 
@@ -149,7 +164,7 @@ export function StudentPortal() {
       setQrLoading(true);
       const response = await api.post(API.FEES_ONLINE_CREATE_QR, {
         studentId: selectedStudent.studentId,
-        feeHead: "ALL",
+        feeHead: isLumpSum ? "MONTHLY" : paymentForm.feeHeads.includes("ALL") ? "ALL" : paymentForm.feeHeads,
         amount,
         ...(!isLumpSum ? { feeBreakdown } : {}),
         paymentType: paymentForm.paymentType,
@@ -303,10 +318,12 @@ export function StudentPortal() {
           setSelectedStudent(null);
           setSelectedStudentDetail(null);
         }}
-        onPay={openPaymentModal}
+        onPay={Number(selectedStudentDetail?.dueFee ?? 0) > 0 ? openPaymentModal : undefined}
         onViewReceipt={() => undefined}
         hideHistory
       />
+
+      <StudentChatbot />
 
       <footer className="border-t border-slate-200 bg-white py-8 dark:border-slate-800 dark:bg-slate-900">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-2 px-4 text-center sm:px-6 lg:px-8">
@@ -338,7 +355,7 @@ function GenerateQrModal({ open, onClose, student, form, loading, onChangeForm, 
   const selectedDue = form.feeHeads.includes("ALL")
     ? Number(calculation?.dueFee ?? student.dueFee ?? 0)
     : form.feeHeads.reduce((sum, head) => sum + Number(calculation?.dueBreakdown?.[head] ?? 0), 0);
-  const feeHeads = Object.keys(calculation?.dueBreakdown ?? {}).filter((head) => head !== "ALL" && Number(calculation?.dueBreakdown?.[head] ?? 0) > 0);
+  const feeHeads = Object.keys(calculation?.dueBreakdown ?? {}).filter((head) => head !== "ALL");
   return (
     <Modal open={open} onClose={onClose} title="Generate Payment QR" subtitle={`${student.name} · ${student.studentId}`} size="lg" footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={onSubmit} disabled={loading}>{loading ? "Generating..." : "Generate QR"}</Button></>}>
       <div className="space-y-4">

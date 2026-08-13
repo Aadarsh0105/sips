@@ -1,0 +1,57 @@
+{
+  "welcome": "Hi! I can help with student search, fee details, online payment, lump sum, bus fees, receipts, and school contact information.",
+  "fallback": "I could not find an exact answer. Try one of the suggested questions, or contact the school office for assistance.",
+  "suggestions": [
+    "How do I check my fees?",
+    "How can I pay online?",
+    "What is lump sum payment?",
+    "How do I contact the school?"
+  ],
+  "entries": [
+    {
+      "keywords": ["search", "find", "check fee", "student id", "mobile number", "fee details"],
+      "question": "How do I check my fees?",
+      "answer": "Enter your Student ID or registered mobile number in the search box. If one mobile number is linked to multiple students, select the correct student and click View."
+    },
+    {
+      "keywords": ["pay", "online", "qr", "scan", "payment"],
+      "question": "How can I pay online?",
+      "answer": "Search for the student, open the profile, and click Pay Fee. Select the required fee heads and amount, generate the QR, then scan it using a supported UPI app."
+    },
+    {
+      "keywords": ["lump sum", "full year", "annual fee", "discount"],
+      "question": "What is lump sum payment?",
+      "answer": "Lump sum payment lets an eligible student pay the remaining academic-year fees together. The exact payable amount and applicable discount are calculated automatically."
+    },
+    {
+      "keywords": ["bus", "transport", "bus fee"],
+      "question": "How can I check bus fees?",
+      "answer": "Bus fee appears as a separate fee head when the student uses the school bus. Current bus dues are included in regular payment calculations, and future eligible bus fees may be included in lump sum."
+    },
+    {
+      "keywords": ["late fee", "fine", "penalty", "waive"],
+      "question": "Why is a late fee shown?",
+      "answer": "Late fees are calculated from the student’s fee schedule and payment status. For a correction or waiver request, please contact the school administration."
+    },
+    {
+      "keywords": ["receipt", "history", "transaction", "proof"],
+      "question": "Where can I get my receipt?",
+      "answer": "Payment receipts are available after a successful transaction. For older payment history or a missing receipt, contact the school office with the Student ID and payment details."
+    },
+    {
+      "keywords": ["cash", "upi", "card", "bank", "mode"],
+      "question": "Which payment modes are supported?",
+      "answer": "The public portal generates an online QR for payment. Cash and other offline modes are recorded by authorized school staff."
+    },
+    {
+      "keywords": ["contact", "phone", "email", "address", "office", "help"],
+      "question": "How do I contact the school?",
+      "answer": "School contact details, email, and address are shown at the bottom of this page. Please contact the office for account-specific assistance."
+    },
+    {
+      "keywords": ["safe", "secure", "login", "password", "privacy"],
+      "question": "Is student search secure?",
+      "answer": "The public portal does not require an admin login. Use only the registered Student ID or mobile number, and do not share generated payment QR details with unknown persons."
+    }
+  ]
+}

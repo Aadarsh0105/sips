@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   MoreVerticalIcon,
   PlusIcon,
@@ -45,6 +45,8 @@ const DEFAULT_PAGE_SIZE = 8;
 
 export function StudentsPage({ canManage }: { canManage: boolean }) {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { payments } = useData();
   const students = useAppSelector((state) => state.students.items);
   const studentList = Array.isArray(students) ? students : [];
@@ -235,7 +237,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
                           menuId={`students-action-menu-${student._id}`}
                           canManage={canManage}
                           canPay={(student.dueFee ?? fee.remaining) > 0 || isLumpSumAvailable(student)}
-                          onView={() => setDetail(student)}
+                          onView={() => navigate(`${location.pathname.startsWith('/reception') ? '/reception' : '/admin'}/student/${student._id}`)}
                           onHistory={() => setHistoryStudent(student)}
                           onPay={() => setPaying(student)}
                           onEdit={() => {
