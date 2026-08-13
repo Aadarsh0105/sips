@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeftIcon } from 'lucide-react';
+import { ArrowLeftIcon, Trash2Icon } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '../../api/axios';
@@ -19,6 +19,14 @@ import { CLASS_OPTIONS } from '../../lib/classes';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { deleteStudent, fetchStudents, type StudentRecord } from '../../features/students/studentsSlice';
 import type { Payment } from '../../lib/types';
+
+type LateFeeWaiverDeletePayload = {
+  month: string;
+  lateFee: number;
+  lateFeePaid: number;
+  waivedAmount: number;
+  payableLateFee: number;
+};
 
 export function StudentDetailsPage() {
   const { id } = useParams();
@@ -45,6 +53,8 @@ export function StudentDetailsPage() {
   const [promoteSaving, setPromoteSaving] = useState(false);
   const [promoteForm, setPromoteForm] = useState({ toClass: '', section: 'A', remarks: '' });
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [waiverDeletePayload, setWaiverDeletePayload] = useState<LateFeeWaiverDeletePayload | null>(null);
+  const [waiverDeleteAmount, setWaiverDeleteAmount] = useState('');
 
   const loadStudent = useCallback(async () => {
     if (!id) return;
@@ -213,6 +223,17 @@ export function StudentDetailsPage() {
               setPromoteOpen(true);
             } : undefined}
             onDelete={canManage ? () => setDeleteOpen(true) : undefined}
+            onDeleteLateFeeWaiver={canManage ? (waiver) => {
+              const waivedAmount = Number(waiver.waivedAmount ?? waiver.amount ?? 0);
+              setWaiverDeleteAmount(String(waivedAmount));
+              setWaiverDeletePayload({
+                month: waiver.month,
+                lateFee: Number(waiver.lateFee ?? 0),
+                lateFeePaid: Number(waiver.lateFeePaid ?? 0),
+                waivedAmount,
+                payableLateFee: Number(waiver.payableLateFee ?? 0),
+              });
+            } : undefined}
           />
         ) : (
           <p className="py-16 text-center text-sm text-slate-500">Student not found.</p>
@@ -255,6 +276,61 @@ export function StudentDetailsPage() {
               </div>
             ))}
           </div>
+
+          {feeCalculation.lateFeeDetails?.length ? (
+            <div className="mt-5 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="border-b border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Late Fee Breakdown</h3>
+                <p className="text-xs text-slate-500">Month-wise late fee, payment, waiver, and payable balance</p>
+              </div>
+              <div className={`grid ${canManage ? 'grid-cols-6' : 'grid-cols-5'} bg-slate-50 px-3 py-2 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400`}>
+                <span>Month</span>
+                <span className="text-right">Late Fee</span>
+                <span className="text-right">Paid</span>
+                <span className="text-right">Waived</span>
+                <span className="text-right">Payable</span>
+                {canManage ? <span className="text-right">Action</span> : null}
+              </div>
+              {feeCalculation.lateFeeDetails.map((item: any) => {
+                const savedWaiver = (Array.isArray((student as any).lateFeeWaivers) ? (student as any).lateFeeWaivers : [])
+                  .find((waiver: any) => waiver.month === item.month);
+                const waivedAmount = Number(item.waivedAmount ?? savedWaiver?.waivedAmount ?? savedWaiver?.amount ?? 0);
+                return (
+                  <div key={item.month} className={`grid ${canManage ? 'grid-cols-6' : 'grid-cols-5'} items-center border-t border-slate-100 px-3 py-2.5 text-sm dark:border-slate-800`}>
+                    <span className="font-medium text-slate-700 dark:text-slate-200">{item.month || '—'}</span>
+                    <span className="text-right text-slate-700 dark:text-slate-200">{formatCurrency(item.lateFee ?? 0)}</span>
+                    <span className="text-right text-emerald-600">{formatCurrency(item.lateFeePaid ?? 0)}</span>
+                    <span className="text-right text-amber-600">{formatCurrency(waivedAmount)}</span>
+                    <span className="text-right font-semibold text-rose-600">{formatCurrency(item.payableLateFee ?? 0)}</span>
+                    {canManage ? (
+                      <span className="flex justify-end">
+                        {item.month ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setWaiverDeleteAmount(String(waivedAmount));
+                              setWaiverDeletePayload({
+                                month: item.month,
+                                lateFee: Number(item.lateFee ?? 0),
+                                lateFeePaid: Number(item.lateFeePaid ?? 0),
+                                waivedAmount,
+                                payableLateFee: Number(item.payableLateFee ?? 0),
+                              });
+                            }}
+                            className="inline-flex min-w-[112px] items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-500/30 dark:hover:bg-rose-500/10"
+                          >
+                            <Trash2Icon className="h-3.5 w-3.5" /> Delete Waiver
+                          </button>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </span>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
 
           {(feeCalculation.monthlyDetails?.length || feeCalculation.busDetails?.length) ? (
             <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -366,6 +442,53 @@ export function StudentDetailsPage() {
       />
 
       <Modal
+        open={Boolean(waiverDeletePayload)}
+        onClose={() => {
+          setWaiverDeletePayload(null);
+          setWaiverDeleteAmount('');
+        }}
+        title="Delete Late Fee Waiver"
+        subtitle={waiverDeletePayload ? `Month ${waiverDeletePayload.month}` : ''}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => {
+              setWaiverDeletePayload(null);
+              setWaiverDeleteAmount('');
+            }}>Cancel</Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                if (!student || !waiverDeletePayload || waiverDeleteAmount.trim() === '') {
+                  toast.error('Waiver amount is required.');
+                  return;
+                }
+                void api.delete(`${API.FEES}/late-fee/waiver/${student.studentId}/${waiverDeletePayload.month}`, {
+                  data: { ...waiverDeletePayload, waivedAmount: Number(waiverDeleteAmount) },
+                })
+                  .then(async () => {
+                    toast.success('Late fee waiver deleted successfully.');
+                    setWaiverDeletePayload(null);
+                    setWaiverDeleteAmount('');
+                    await loadStudent();
+                  })
+                  .catch((error: any) => toast.error(error?.response?.data?.message ?? 'Unable to delete late fee waiver.'));
+              }}
+            >Delete Waiver</Button>
+          </>
+        }
+      >
+        <Field label="Waiver Amount" required>
+          <Input
+            type="text"
+            inputMode="decimal"
+            value={waiverDeleteAmount}
+            onChange={(event) => /^\d*(\.\d{0,2})?$/.test(event.target.value) && setWaiverDeleteAmount(event.target.value)}
+            placeholder="Enter waiver amount"
+          />
+        </Field>
+      </Modal>
+
+      <Modal
         open={lateFeeOpen}
         onClose={() => setLateFeeOpen(false)}
         title="Waive Late Fee"
@@ -379,7 +502,16 @@ export function StudentDetailsPage() {
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Fee Month" required>
-            <Input type="month" value={lateFeeForm.month} onChange={(e) => setLateFeeForm((form) => ({ ...form, month: e.target.value }))} />
+            <Select value={lateFeeForm.month} onChange={(e) => setLateFeeForm((form) => ({ ...form, month: e.target.value }))}>
+              <option value="">Select late fee</option>
+              {(feeCalculation?.lateFeeDetails ?? [])
+                .filter((item: any) => Number(item.payableLateFee ?? 0) > 0)
+                .map((item: any) => (
+                  <option key={item.month} value={item.month}>
+                    {item.month} - {formatCurrency(item.payableLateFee ?? 0)} payable
+                  </option>
+                ))}
+            </Select>
           </Field>
           <Field label="Waiver Type" required>
             <Select value={lateFeeForm.waiverType} onChange={(e) => setLateFeeForm((form) => ({ ...form, waiverType: e.target.value, waivedAmount: '' }))}>

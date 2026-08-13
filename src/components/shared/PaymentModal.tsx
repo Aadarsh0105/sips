@@ -15,7 +15,8 @@ import type { Payment, PaymentMethod } from '../../lib/types';
 type LumpSumPreview = {
   eligible: boolean;
   paymentType: string;
-  feeDiscountType: string;
+  feeDiscountType?: string;
+  discountType?: string;
   monthlyDiscountPercentage: number;
   feeStartDate?: string;
   totalAcademicMonths?: number;
@@ -70,6 +71,7 @@ type FeeCalculation = {
     lateFeePaid: number;
   }>;
   dueFee: number;
+  lumpSumDetails?: LumpSumPreview | null;
 };
 
 const ALLOWED_FEE_HEADS = [
@@ -100,8 +102,8 @@ export function PaymentModal({ student, open, onClose, onDone }: {
   const [feeHeadOpen, setFeeHeadOpen] = useState(false);
   const feeHeadRef = useRef<HTMLDivElement>(null);
   const [remarks, setRemarks] = useState('');
-  const [preview, setPreview] = useState<LumpSumPreview | null>(null);
   const [calculation, setCalculation] = useState<FeeCalculation | null>(null);
+  const [lumpSumDetails, setLumpSumDetails] = useState<LumpSumPreview | null>(null);
   const [pendingPayment, setPendingPayment] = useState<{ full: boolean; lumpSum: boolean } | null>(null);
 
   const studentId = student?.studentId ?? '';
@@ -112,29 +114,9 @@ export function PaymentModal({ student, open, onClose, onDone }: {
   const lumpSumLocked = Boolean(student?.lumpSumPaid);
 
   useEffect(() => {
-    if (!open || !isLumpSumSeason || !studentId) {
-      setPreview(null);
-      return;
-    }
-    let active = true;
-    void api
-      .get(`${API.FEES}/lump-sum-preview/${studentId}`)
-      .then((response) => {
-        if (!active) return;
-        setPreview(response?.data?.data ?? null);
-      })
-      .catch(() => {
-        if (active) setPreview(null);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [open, studentId, isLumpSumSeason]);
-
-  useEffect(() => {
     if (!open || !studentId) {
       setCalculation(null);
+      setLumpSumDetails(null);
       return;
     }
     let active = true;
@@ -145,7 +127,9 @@ export function PaymentModal({ student, open, onClose, onDone }: {
       })
       .then((response) => {
         if (!active) return;
-        setCalculation(response?.data?.data ?? null);
+        const data = response?.data?.data ?? null;
+        setCalculation(data);
+        if (data?.lumpSumDetails) setLumpSumDetails(data.lumpSumDetails);
       })
       .catch(() => {
         if (active) setCalculation(null);
@@ -165,6 +149,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
   }, []);
 
   if (!student) return null;
+  const preview = lumpSumDetails;
   const selectedFeeDue = feeHeads.includes('ALL')
     ? Number(calculation?.dueFee ?? remaining)
     : feeHeads.reduce((sum, head) => sum + Number(calculation?.dueBreakdown?.[head] ?? 0), 0);
@@ -232,7 +217,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
         paymentMode: method.toUpperCase(),
         remarks: lumpSum ? remarks.trim() || 'Academic year lump sum payment' : remarks.trim() || 'Fee payment',
         paymentType: lumpSum ? 'LUMP_SUM' : 'REGULAR',
-        feeDiscountType: lumpSum ? preview?.feeDiscountType ?? 'NONE' : 'NONE',
+        feeDiscountType: lumpSum ? preview?.feeDiscountType ?? preview?.discountType ?? 'NONE' : 'NONE',
         lumpSumDiscountPercent: lumpSum ? preview?.monthlyDiscountPercentage ?? 0 : 0,
         lumpSumDiscountAmount: lumpSum ? preview?.additionalDiscount ?? 0 : 0,
       });

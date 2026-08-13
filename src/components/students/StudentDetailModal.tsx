@@ -34,6 +34,7 @@ export function StudentDetailModal({
   onEdit,
   onPromote,
   onDelete,
+  onDeleteLateFeeWaiver,
 }: {
   student: StudentRecord | null;
   open: boolean;
@@ -48,6 +49,7 @@ export function StudentDetailModal({
   onEdit?: () => void;
   onPromote?: () => void;
   onDelete?: () => void;
+  onDeleteLateFeeWaiver?: (waiver: any) => void;
 }) {
   if (!student) return null;
 
@@ -230,10 +232,19 @@ export function StudentDetailModal({
             <div className="space-y-3">
               {lateFeeWaivers.map((item: any, index: number) => (
                 <div key={item._id ?? index} className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800/50">
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <MiniStat label="Amount" value={formatCurrency(item.amount ?? 0)} />
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-4">
+                    <MiniStat label="Month" value={item.month || '—'} />
+                    <MiniStat label="Waiver Type" value={item.waiverType || 'AMOUNT'} />
+                    <MiniStat label="Waived Amount" value={formatCurrency(item.waivedAmount ?? item.amount ?? 0)} />
                     <MiniStat label="Reason" value={item.reason || '—'} />
-                    <MiniStat label="Applied At" value={formatDate(item.appliedAt || item.createdAt || '')} />
+                    <MiniStat label="Applied At" value={formatDate(item.waivedAt || item.appliedAt || item.createdAt || '')} />
+                    </div>
+                    {onDeleteLateFeeWaiver && item.month ? (
+                      <button type="button" onClick={() => onDeleteLateFeeWaiver(item)} className="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-500/20 dark:hover:bg-rose-500/10">
+                        Delete
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               ))}
