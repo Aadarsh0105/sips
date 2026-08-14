@@ -51,6 +51,12 @@ type FeeCalculation = {
     monthlyFee: number;
     effectiveMonthlyFee: number;
   }>;
+  busDetails?: Array<{
+    month: string;
+    busFee: number;
+    effectiveBusFee: number;
+    firstMonthProrated: boolean;
+  }>;
   feeDiscountType: string;
   feeBreakdown: Record<string, number>;
   paidBreakdown: Record<string, number>;
@@ -99,6 +105,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('cash');
   const [feeHeads, setFeeHeads] = useState<Array<(typeof ALLOWED_FEE_HEADS)[number]>>(['ALL']);
+  const [selectedFeeMonths, setSelectedFeeMonths] = useState<Record<'MONTHLY' | 'BUS', string[]>>({ MONTHLY: [], BUS: [] });
   const [feeHeadOpen, setFeeHeadOpen] = useState(false);
   const feeHeadRef = useRef<HTMLDivElement>(null);
   const [remarks, setRemarks] = useState('');
@@ -150,9 +157,19 @@ export function PaymentModal({ student, open, onClose, onDone }: {
 
   if (!student) return null;
   const preview = lumpSumDetails;
+  const monthlyDueOptions = buildDueMonthOptions(calculation?.monthlyDetails ?? [], Number(calculation?.dueBreakdown?.MONTHLY ?? 0), 'effectiveMonthlyFee');
+  const busDueOptions = buildDueMonthOptions(calculation?.busDetails ?? [], Number(calculation?.dueBreakdown?.BUS ?? 0), 'effectiveBusFee');
+  const monthOptions = { MONTHLY: monthlyDueOptions, BUS: busDueOptions };
+  const selectedMonthTotal = (head: 'MONTHLY' | 'BUS') => monthOptions[head]
+    .filter((item) => selectedFeeMonths[head].includes(item.month))
+    .reduce((sum, item) => sum + item.due, 0);
   const selectedFeeDue = feeHeads.includes('ALL')
     ? Number(calculation?.dueFee ?? remaining)
-    : feeHeads.reduce((sum, head) => sum + Number(calculation?.dueBreakdown?.[head] ?? 0), 0);
+    : feeHeads.reduce((sum, head) => sum + (
+      head === 'MONTHLY' || head === 'BUS'
+        ? selectedMonthTotal(head)
+        : Number(calculation?.dueBreakdown?.[head] ?? 0)
+    ), 0);
   const hasPayableLumpSum = Boolean(
     isLumpSumSeason &&
     preview?.eligible &&
@@ -164,6 +181,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
     setAmount('');
     setMethod('cash');
     setFeeHeads(['ALL']);
+    setSelectedFeeMonths({ MONTHLY: [], BUS: [] });
     setFeeHeadOpen(false);
     setRemarks('');
     setPendingPayment(null);
@@ -196,7 +214,9 @@ export function PaymentModal({ student, open, onClose, onDone }: {
       : feeHeads;
     let balance = value;
     return selectedHeads.reduce<Record<string, number>>((breakdown, head) => {
-      const due = Number(calculation?.dueBreakdown?.[head] ?? 0);
+      const due = head === 'MONTHLY' || head === 'BUS'
+        ? selectedMonthTotal(head)
+        : Number(calculation?.dueBreakdown?.[head] ?? 0);
       const allocated = Math.min(due, balance);
       if (allocated > 0) {
         breakdown[head] = allocated;
@@ -301,6 +321,12 @@ export function PaymentModal({ student, open, onClose, onDone }: {
                     setFeeHeads((current) => current.includes(selectedHead)
                       ? current.filter((item) => item !== selectedHead)
                       : [...current.filter((item) => item !== 'ALL'), selectedHead]);
+                    if (selectedHead === 'MONTHLY' || selectedHead === 'BUS') {
+                      setSelectedFeeMonths((current) => ({
+                        ...current,
+                        [selectedHead]: current[selectedHead].length ? [] : monthOptions[selectedHead].map((item) => item.month),
+                      }));
+                    }
                     setAmount('');
                   }
                 }}
@@ -367,11 +393,18 @@ export function PaymentModal({ student, open, onClose, onDone }: {
                               setAmount('');
                               if (item === 'ALL') {
                                 setFeeHeads((current) => current.includes('ALL') ? [] : ['ALL']);
+                                setSelectedFeeMonths({ MONTHLY: [], BUS: [] });
                                 return;
                               }
                               setFeeHeads((current) => current.includes(item)
                                 ? current.filter((selected) => selected !== item)
                                 : [...current.filter((selected) => selected !== 'ALL'), item]);
+                              if (item === 'MONTHLY' || item === 'BUS') {
+                                setSelectedFeeMonths((current) => ({
+                                  ...current,
+                                  [item]: current[item].length ? [] : monthOptions[item].map((option) => option.month),
+                                }));
+                              }
                             }}
                           />
                           <span>{item.replace(/_/g, ' ')}</span>
@@ -404,6 +437,32 @@ export function PaymentModal({ student, open, onClose, onDone }: {
               </Select>
             </Field>
           </div>
+          {(feeHeads.includes('MONTHLY') || feeHeads.includes('BUS')) ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {(['MONTHLY', 'BUS'] as const).map((head) => feeHeads.includes(head) ? (
+                <MonthMultiSelect
+                  key={head}
+                  label={`${head === 'MONTHLY' ? 'Monthly Fee' : 'Bus Fee'} Months`}
+                  options={monthOptions[head]}
+                  selected={selectedFeeMonths[head]}
+                  onChange={(months) => {
+                    setSelectedFeeMonths((current) => ({ ...current, [head]: months }));
+                    const monthTotal = monthOptions[head]
+                      .filter((item) => months.includes(item.month))
+                      .reduce((sum, item) => sum + item.due, 0);
+                    const otherTotal = feeHeads
+                      .filter((item) => item !== head)
+                      .reduce((sum, item) => sum + (
+                        item === 'MONTHLY' || item === 'BUS'
+                          ? selectedMonthTotal(item)
+                          : Number(calculation?.dueBreakdown?.[item] ?? 0)
+                      ), 0);
+                    setAmount(String(monthTotal + otherTotal));
+                  }}
+                />
+              ) : null)}
+            </div>
+          ) : null}
           <Field label="Remarks">
             <Textarea placeholder="July Fee" value={remarks} onChange={(e) => setRemarks(e.target.value)} />
           </Field>
@@ -432,5 +491,54 @@ function SummaryTile({ label, value, tone }: { label: string; value: string; ton
         {value}
       </p>
     </div>
+  );
+}
+
+function buildDueMonthOptions<T extends { month: string }>(items: T[], totalDue: number, amountKey: keyof T) {
+  const scheduledTotal = items.reduce((sum, item) => sum + Number(item[amountKey] ?? 0), 0);
+  let paidBalance = Math.max(0, scheduledTotal - totalDue);
+  return items.map((item) => {
+    const amount = Number(item[amountKey] ?? 0);
+    const paid = Math.min(amount, paidBalance);
+    paidBalance -= paid;
+    return { month: item.month, due: Math.max(0, amount - paid) };
+  }).filter((item) => item.due > 0);
+}
+
+function MonthMultiSelect({ label, options, selected, onChange }: {
+  label: string;
+  options: Array<{ month: string; due: number }>;
+  selected: string[];
+  onChange: (months: string[]) => void;
+}) {
+  const allSelected = options.length > 0 && selected.length === options.length;
+  return (
+    <Field label={label} required>
+      <div className="rounded-xl border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900">
+        <label className="flex cursor-pointer items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          <span className="flex items-center gap-2">
+            <input type="checkbox" checked={allSelected} onChange={() => onChange(allSelected ? [] : options.map((item) => item.month))} />
+            All due months
+          </span>
+          <span>{formatCurrency(options.reduce((sum, item) => sum + item.due, 0))}</span>
+        </label>
+        <div className="mt-1 max-h-36 space-y-1 overflow-y-auto">
+          {options.map((item) => (
+            <label key={item.month} className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+              <span className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(item.month)}
+                  onChange={() => onChange(selected.includes(item.month) ? selected.filter((month) => month !== item.month) : [...selected, item.month])}
+                />
+                {item.month}
+              </span>
+              <span className="font-semibold">{formatCurrency(item.due)}</span>
+            </label>
+          ))}
+          {!options.length ? <p className="px-3 py-2 text-xs text-slate-500">No due months.</p> : null}
+        </div>
+      </div>
+    </Field>
   );
 }
