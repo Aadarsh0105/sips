@@ -37,13 +37,13 @@ function SidebarInner({
     settings
   } = useData();
   return <>
-      <div className="flex items-center gap-3 px-5 py-5">
-        <SchoolLogo logo={settings.logo} name={settings.name} />
-        <div className="min-w-0">
-          <p className="truncate font-display text-sm font-extrabold text-slate-900 dark:text-white">
+      <div className="flex items-start gap-2 px-4 py-5 pr-11 lg:items-center lg:gap-3 lg:px-5">
+        <SchoolLogo logo={settings.logo} name={settings.name} size="sm" className="shrink-0 lg:h-11 lg:w-11" />
+        <div className="min-w-0 flex-1">
+          <p className="break-words font-display text-sm font-extrabold leading-tight text-slate-900 dark:text-white">
             {settings.name}
           </p>
-          <p className="text-xs font-medium text-slate-400">{subtitle}</p>
+          <p className="mt-1 text-xs font-medium text-slate-400">{subtitle}</p>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto pb-4">

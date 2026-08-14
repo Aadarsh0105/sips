@@ -269,19 +269,19 @@ export function PaymentModal({ student, open, onClose, onDone }: {
   return (
     <Modal open={open} size="lg" onClose={() => { reset(); onClose(); }} title="Accept Fee Payment" subtitle={`${student.name} · ${student.studentId}`}
       footer={
-        <>
+        <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:items-center sm:justify-end sm:gap-3">
           {hasPayableLumpSum ? (
-            <Button variant="outline" onClick={() => requestPayment(false, true)}>
+            <Button variant="outline" className="w-full whitespace-nowrap sm:w-auto" onClick={() => requestPayment(false, true)}>
               Pay Lump Sum ({formatCurrency(preview.lumpSumAmount)})
             </Button>
           ) : null}
-          <Button variant="outline" onClick={() => requestPayment(true)} disabled={!canPaySelectedFee}>
+          <Button variant="outline" className="w-full whitespace-nowrap sm:w-auto" onClick={() => requestPayment(true)} disabled={!canPaySelectedFee}>
             Pay Selected ({formatCurrency(selectedFeeDue)})
           </Button>
-          <Button onClick={() => requestPayment(false)} disabled={!canPaySelectedFee}>
+          <Button className="w-full whitespace-nowrap sm:w-auto" onClick={() => requestPayment(false)} disabled={!canPaySelectedFee}>
             Make Payment
           </Button>
-        </>
+        </div>
       }>
       {/* <div className="mb-5 grid grid-cols-3 gap-3">
         <SummaryTile label="Total Fee" value={formatCurrency(total)} />

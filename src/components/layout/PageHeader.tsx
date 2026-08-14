@@ -7,14 +7,15 @@ import React from 'react';
 export function PageHeader({
   title,
   subtitle,
-  action
+  action,
+  inlineOnMobile = false
 
 
 
 
-}: {title: string;subtitle?: string;action?: React.ReactNode;}) {
+}: {title: string;subtitle?: string;action?: React.ReactNode;inlineOnMobile?: boolean;}) {
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className={`mb-6 flex gap-3 ${inlineOnMobile ? 'flex-row items-center justify-between' : 'flex-col sm:flex-row sm:items-center sm:justify-between'}`}>
       <div>
         <h1 className="font-display text-2xl font-extrabold text-slate-900 dark:text-white">
           {title}

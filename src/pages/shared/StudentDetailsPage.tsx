@@ -192,7 +192,7 @@ export function StudentDetailsPage() {
         </div>
       </div>
 
-      <Card className="p-5 sm:p-6">
+      <Card className="p-3 sm:p-6">
         {loading ? (
           <p className="py-16 text-center text-sm text-slate-500">Loading student details...</p>
         ) : student ? (
@@ -241,7 +241,7 @@ export function StudentDetailsPage() {
       </Card>
 
       {student && feeCalculation ? (
-        <Card className="mt-5 p-5 sm:p-6">
+        <Card className="mt-5 p-3 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white">Calculated Fee Details</h2>
@@ -263,12 +263,12 @@ export function StudentDetailsPage() {
             <PreviewStat label="Discount Type" value={feeCalculation.feeDiscountType || 'NONE'} />
           </div>
 
-          <div className="mt-5 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-            <div className="grid grid-cols-4 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="grid min-w-[480px] grid-cols-4 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
               <span>Fee Head</span><span className="text-right">Total</span><span className="text-right">Paid</span><span className="text-right">Due</span>
             </div>
             {Object.keys(feeCalculation.feeBreakdown ?? {}).map((head) => (
-              <div key={head} className="grid grid-cols-4 border-t border-slate-100 px-3 py-2.5 text-sm dark:border-slate-800">
+              <div key={head} className="grid min-w-[480px] grid-cols-4 border-t border-slate-100 px-3 py-2.5 text-sm dark:border-slate-800">
                 <span className="font-medium text-slate-700 dark:text-slate-200">{head.replace(/_/g, ' ')}</span>
                 <span className="text-right text-slate-700 dark:text-slate-200">{formatCurrency(feeCalculation.feeBreakdown?.[head] ?? 0)}</span>
                 <span className="text-right text-emerald-600">{formatCurrency(feeCalculation.paidBreakdown?.[head] ?? 0)}</span>
@@ -278,12 +278,12 @@ export function StudentDetailsPage() {
           </div>
 
           {feeCalculation.lateFeeDetails?.length ? (
-            <div className="mt-5 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
               <div className="border-b border-slate-200 bg-slate-50 px-3 py-3 dark:border-slate-700 dark:bg-slate-800">
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Late Fee Breakdown</h3>
                 <p className="text-xs text-slate-500">Month-wise late fee, payment, waiver, and payable balance</p>
               </div>
-              <div className={`grid ${canManage ? 'grid-cols-6' : 'grid-cols-5'} bg-slate-50 px-3 py-2 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400`}>
+              <div className={`grid ${canManage ? 'min-w-[720px] grid-cols-6' : 'min-w-[600px] grid-cols-5'} bg-slate-50 px-3 py-2 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400`}>
                 <span>Month</span>
                 <span className="text-right">Late Fee</span>
                 <span className="text-right">Paid</span>
@@ -296,7 +296,7 @@ export function StudentDetailsPage() {
                   .find((waiver: any) => waiver.month === item.month);
                 const waivedAmount = Number(item.waivedAmount ?? savedWaiver?.waivedAmount ?? savedWaiver?.amount ?? 0);
                 return (
-                  <div key={item.month} className={`grid ${canManage ? 'grid-cols-6' : 'grid-cols-5'} items-center border-t border-slate-100 px-3 py-2.5 text-sm dark:border-slate-800`}>
+                  <div key={item.month} className={`grid ${canManage ? 'min-w-[720px] grid-cols-6' : 'min-w-[600px] grid-cols-5'} items-center border-t border-slate-100 px-3 py-2.5 text-sm dark:border-slate-800`}>
                     <span className="font-medium text-slate-700 dark:text-slate-200">{item.month || '—'}</span>
                     <span className="text-right text-slate-700 dark:text-slate-200">{formatCurrency(item.lateFee ?? 0)}</span>
                     <span className="text-right text-emerald-600">{formatCurrency(item.lateFeePaid ?? 0)}</span>

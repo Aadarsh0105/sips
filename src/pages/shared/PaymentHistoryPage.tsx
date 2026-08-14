@@ -175,8 +175,9 @@ export function PaymentHistoryPage() {
       <PageHeader
         title="Payment History"
         subtitle={`${history.length} total transactions`}
+        inlineOnMobile
         action={
-          <Button variant="outline" onClick={handleExport}>
+          <Button variant="outline" className="shrink-0 justify-center" onClick={handleExport}>
             <DownloadIcon className="h-4 w-4" /> Export
           </Button>
         }
@@ -203,23 +204,23 @@ export function PaymentHistoryPage() {
         </div>
       </Card>
 
-      <Card>
+      <Card className="overflow-hidden">
         {loading ? (
           <p className="px-6 py-10 text-sm text-slate-500">Loading payment history...</p>
         ) : current.length === 0 ? (
           <EmptyState icon={ReceiptIcon} title="No transactions" description="Try adjusting your filters." />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+          <div className="w-full overflow-x-auto pb-2">
+            <table className="min-w-[980px] w-full text-left text-sm">
               <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Receipt</th>
-                  <th className="px-4 py-3 font-semibold">Student</th>
-                  <th className="px-4 py-3 font-semibold">Date &amp; Time</th>
-                  <th className="px-4 py-3 font-semibold">Collected By</th>
-                  <th className="px-4 py-3 text-right font-semibold">Amount</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-semibold">Receipt</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-semibold">Student</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-semibold">Date &amp; Time</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-semibold">Collected By</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-right font-semibold">Amount</th>
+                  <th className="whitespace-nowrap px-4 py-3 font-semibold">Status</th>
+                  <th className="whitespace-nowrap px-4 py-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -228,24 +229,29 @@ export function PaymentHistoryPage() {
                   const payment = mapToPayment(item);
                   return (
                     <tr key={item._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                      <td className="px-4 py-3.5">
+                      <td className="whitespace-nowrap px-4 py-3.5">
                         <p className="font-medium text-slate-700 dark:text-slate-200">{item.receiptNo}</p>
                         <p className="text-xs text-slate-400">{item.feeHead} · {item.paymentType}</p>
                       </td>
-                      <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300">
+                      <td className="whitespace-nowrap px-4 py-3.5 text-slate-600 dark:text-slate-300">
                         <p className="font-medium text-slate-700 dark:text-slate-200">{student.name}</p>
-                        <p className="text-xs text-slate-400">{student.id}</p>
+                        <p className="text-xs text-slate-400">
+                          {item.studentId}
+                          {typeof item.student === 'object' && item.student.className
+                            ? ` · Class ${item.student.className}-${item.student.section || '—'}`
+                            : ''}
+                        </p>
                       </td>
-                      <td className="px-4 py-3.5 text-slate-500">
+                      <td className="whitespace-nowrap px-4 py-3.5 text-slate-500">
                         {formatDate(item.paymentDate)} · {formatTime(item.paymentDate)}
                       </td>
-                      <td className="px-4 py-3.5 text-slate-500">
+                      <td className="whitespace-nowrap px-4 py-3.5 text-slate-500">
                         <p className="font-medium text-slate-700 dark:text-slate-200">
                           {item.collectedBy?.name ?? '—'}
                         </p>
                         <p className="text-xs text-slate-400">{item.collectedBy?.role ?? ''}</p>
                       </td>
-                      <td className="px-4 py-3.5 text-right font-semibold text-slate-800 dark:text-slate-100">
+                      <td className="whitespace-nowrap px-4 py-3.5 text-right font-semibold text-slate-800 dark:text-slate-100">
                         {formatCurrency(item.amount)}
                       </td>
                       <td className="px-4 py-3.5">

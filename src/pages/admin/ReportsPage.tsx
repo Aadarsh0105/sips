@@ -154,7 +154,7 @@ export function ReportsPage() {
         }
       />
 
-      <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Today Collection" value={formatCurrency(dashboard.adminStats?.todayCollection ?? todayCollection)} />
         <SummaryCard label="Weekly Collection" value={formatCurrency(weeklyCollection)} />
         <SummaryCard label="Monthly Collection" value={formatCurrency(dashboard.adminStats?.monthCollection ?? monthlyCollection)} />
@@ -183,7 +183,7 @@ export function ReportsPage() {
         </div>
       </Card>
 
-      <Card className="p-4">
+      <Card className="p-3 sm:p-4">
         <CardHeader title="Payment History" subtitle={`${collectionRows.length} records`} />
         <div id="report-print">
           <div className="mb-4 hidden print:block">
@@ -195,16 +195,16 @@ export function ReportsPage() {
           ) : collectionRows.length === 0 ? (
             <EmptyState icon={FileTextIcon} title="No records" description="Try changing the filters." />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+            <div className="w-full overflow-x-auto pb-2">
+              <table className="min-w-[900px] w-full text-left text-sm">
                 <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
                   <tr>
-                    <th className="px-6 py-3 font-semibold">Receipt</th>
-                    <th className="px-6 py-3 font-semibold">Student</th>
-                    <th className="px-6 py-3 font-semibold">Date &amp; Time</th>
-                    <th className="px-6 py-3 font-semibold">Method</th>
-                    <th className="px-6 py-3 font-semibold">Collected By</th>
-                    <th className="px-6 py-3 text-right font-semibold">Amount</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold sm:px-6">Receipt</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold sm:px-6">Student</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold sm:px-6">Date &amp; Time</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold sm:px-6">Method</th>
+                    <th className="whitespace-nowrap px-4 py-3 font-semibold sm:px-6">Collected By</th>
+                    <th className="whitespace-nowrap px-4 py-3 text-right font-semibold sm:px-6">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -212,12 +212,12 @@ export function ReportsPage() {
                     const student = typeof item.student === 'object' ? item.student : null;
                     return (
                       <tr key={item._id}>
-                        <td className="px-6 py-3 font-medium text-slate-700 dark:text-slate-200">{item.receiptNo}</td>
-                        <td className="px-6 py-3 text-slate-600 dark:text-slate-300">{student?.name ?? item.studentId}</td>
-                        <td className="px-6 py-3 text-slate-500">{formatDate(item.paymentDate)} · {formatTime(item.paymentDate)}</td>
-                        <td className="px-6 py-3 uppercase text-slate-500">{item.paymentMode}</td>
-                        <td className="px-6 py-3 text-slate-500">{item.collectedBy?.name ?? '—'}</td>
-                        <td className="px-6 py-3 text-right font-semibold text-emerald-600">{formatCurrency(item.amount)}</td>
+                        <td className="whitespace-nowrap px-4 py-3 font-medium text-slate-700 sm:px-6 dark:text-slate-200">{item.receiptNo}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-600 sm:px-6 dark:text-slate-300">{student?.name ?? item.studentId}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-500 sm:px-6">{formatDate(item.paymentDate)} · {formatTime(item.paymentDate)}</td>
+                        <td className="whitespace-nowrap px-4 py-3 uppercase text-slate-500 sm:px-6">{item.paymentMode}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-slate-500 sm:px-6">{item.collectedBy?.name ?? '—'}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-emerald-600 sm:px-6">{formatCurrency(item.amount)}</td>
                       </tr>
                     );
                   })}

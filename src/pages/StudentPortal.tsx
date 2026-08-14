@@ -196,21 +196,21 @@ export function StudentPortal() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <header className="absolute inset-x-0 top-0 z-20">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <SchoolLogo logo={settings.logo} name={settings.name} className="ring-2 ring-white/30" />
-            <span className="font-display text-lg font-extrabold text-white drop-shadow">{settings.name}</span>
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-4 sm:gap-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+            <SchoolLogo logo={settings.logo} name={settings.name} size="sm" className="shrink-0 ring-2 ring-white/30 sm:h-11 sm:w-11" />
+            <span className="min-w-0 font-display text-sm font-extrabold leading-tight text-white drop-shadow sm:text-lg">{settings.name}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <button
               onClick={toggle}
               aria-label="Toggle theme"
-              className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/15 text-white backdrop-blur transition-colors hover:bg-white/25"
+              className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 text-white backdrop-blur transition-colors hover:bg-white/25 sm:h-10 sm:w-10"
             >
               {theme === "dark" ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
             </button>
             <Link to="/login">
-              <Button className="shadow-lg">
+              <Button size="sm" className="px-2 text-[11px] shadow-lg sm:h-10 sm:px-4 sm:text-sm">
                 <ShieldCheckIcon className="h-4 w-4" /> Admin Login
               </Button>
             </Link>

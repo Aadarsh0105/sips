@@ -59,14 +59,14 @@ export function StudentDetailModal({
   const busFeeRefunds = Array.isArray((student as any).busFeeRefunds) ? (student as any).busFeeRefunds : [];
 
   const content = (
-    <div className="space-y-6">
-      <div className="flex flex-col items-center gap-4 rounded-2xl bg-slate-50 p-5 sm:flex-row sm:items-start dark:bg-slate-800/50">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-brand-600 text-2xl font-bold text-white">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-row flex-wrap items-start gap-3 rounded-2xl bg-slate-50 p-4 sm:flex-nowrap sm:gap-4 sm:p-5 dark:bg-slate-800/50">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-xl font-bold text-white sm:h-20 sm:w-20 sm:text-2xl">
             {student.name[0]}
           </div>
-          <div className="flex-1 text-center sm:text-left">
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-              <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white">
+          <div className="min-w-0 flex-1 text-left">
+            <div className="flex flex-wrap items-center justify-start gap-2">
+              <h3 className="break-words font-display text-lg font-bold text-slate-900 sm:text-xl dark:text-white">
                 {student.name}
               </h3>
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${student.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}>
@@ -77,14 +77,14 @@ export function StudentDetailModal({
               Class {student.className}-{student.section}
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="grid w-full grid-cols-3 gap-2 text-center sm:w-auto sm:gap-3">
             <MiniStat label="Monthly Fee" value={formatCurrency(student.monthlyFee ?? 0)} />
             <MiniStat label="Paid" value={formatCurrency(student.paidFee ?? 0)} tone="text-emerald-600" />
             <MiniStat label="Due" value={formatCurrency(student.dueFee ?? 0)} tone="text-rose-600" />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-6">
           <Info icon={CalendarIcon} label="Student ID" value={student.studentId} />
           <Info icon={CalendarIcon} label="Status" value={student.status || 'ACTIVE'} className="capitalize" />
           <Info icon={UserIcon} label="Father's Name" value={student.fatherName} />
@@ -101,7 +101,7 @@ export function StudentDetailModal({
           <Info icon={CalendarIcon} label="Admission No" value={student.admissionNo || '�'} />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-200 p-4 sm:grid-cols-4 dark:border-slate-800">
+        <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-4 sm:p-4 dark:border-slate-800">
           <MiniStat label="Admission Fee" value={formatCurrency((student as any).admissionFee ?? 0)} />
           <MiniStat label="Total Fee" value={formatCurrency(student.totalFee)} />
           <MiniStat label="Monthly Fee" value={formatCurrency(student.monthlyFee ?? 0)} tone="text-slate-700" />
@@ -252,12 +252,12 @@ export function StudentDetailModal({
           </div>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 [&>button]:h-12 sm:flex sm:flex-wrap sm:[&>button]:h-10">
           {onPay ? (
             <button
               type="button"
               onClick={onPay}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 sm:w-auto"
             >
               <WalletIcon className="h-4 w-4" /> Pay Fee
             </button>
@@ -266,7 +266,7 @@ export function StudentDetailModal({
             <button
               type="button"
               onClick={onViewHistory}
-              className="inline-flex items-center gap-2 rounded-lg border border-brand-200 px-3 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50 dark:border-brand-500/20 dark:text-brand-300 dark:hover:bg-brand-500/10"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-brand-200 px-3 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50 sm:w-auto dark:border-brand-500/20 dark:text-brand-300 dark:hover:bg-brand-500/10"
             >
               <FileTextIcon className="h-4 w-4" /> View Payment History
             </button>
@@ -275,7 +275,7 @@ export function StudentDetailModal({
             <button
               type="button"
               onClick={onWaiveLateFee}
-              className="inline-flex items-center gap-2 rounded-lg border border-brand-200 px-3 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50 dark:border-brand-500/20 dark:text-brand-300 dark:hover:bg-brand-500/10"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-brand-200 px-3 py-2 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50 sm:w-auto dark:border-brand-500/20 dark:text-brand-300 dark:hover:bg-brand-500/10"
             >
               <BadgeIndianRupeeIcon className="h-4 w-4" /> Waive Late Fee
             </button>
@@ -284,23 +284,23 @@ export function StudentDetailModal({
             <button
               type="button"
               onClick={onBusAction}
-              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${(student as any).hasBusFacility ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-brand-600 text-white hover:bg-brand-700'}`}
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:w-auto ${(student as any).hasBusFacility ? 'bg-rose-600 text-white hover:bg-rose-700' : 'bg-brand-600 text-white hover:bg-brand-700'}`}
             >
               <BusFrontIcon className="h-4 w-4" /> {(student as any).hasBusFacility ? 'Stop Bus Facility' : 'Start Bus Facility'}
             </button>
           ) : null}
           {onEdit ? (
-            <button type="button" onClick={onEdit} className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:border-blue-500/20 dark:text-blue-300 dark:hover:bg-blue-500/10">
+            <button type="button" onClick={onEdit} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50 sm:w-auto dark:border-blue-500/20 dark:text-blue-300 dark:hover:bg-blue-500/10">
               <PencilIcon className="h-4 w-4" /> Edit
             </button>
           ) : null}
           {onPromote ? (
-            <button type="button" onClick={onPromote} className="inline-flex items-center gap-2 rounded-lg border border-violet-200 px-3 py-2 text-sm font-medium text-violet-600 transition-colors hover:bg-violet-50 dark:border-violet-500/20 dark:text-violet-300 dark:hover:bg-violet-500/10">
+            <button type="button" onClick={onPromote} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-violet-200 px-3 py-2 text-sm font-medium text-violet-600 transition-colors hover:bg-violet-50 sm:w-auto dark:border-violet-500/20 dark:text-violet-300 dark:hover:bg-violet-500/10">
               <GraduationCapIcon className="h-4 w-4" /> Promote
             </button>
           ) : null}
           {onDelete ? (
-            <button type="button" onClick={onDelete} className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 dark:border-rose-500/20 dark:hover:bg-rose-500/10">
+            <button type="button" onClick={onDelete} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 sm:w-auto dark:border-rose-500/20 dark:hover:bg-rose-500/10">
               <Trash2Icon className="h-4 w-4" /> Delete
             </button>
           ) : null}
@@ -336,11 +336,11 @@ function Info({
   className?: string;
 }) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex min-w-0 items-start gap-2 sm:gap-3">
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-      <div>
+      <div className="min-w-0">
         <p className="text-xs text-slate-400">{label}</p>
-        <p className={`text-sm font-medium text-slate-800 dark:text-slate-100 ${className ?? ''}`}>
+        <p className={`break-words text-sm font-medium text-slate-800 dark:text-slate-100 ${className ?? ''}`}>
           {value}
         </p>
       </div>
