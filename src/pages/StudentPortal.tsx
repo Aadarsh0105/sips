@@ -179,7 +179,10 @@ export function StudentPortal() {
         studentId: selectedStudent.studentId,
         feeHead: isLumpSum ? "MONTHLY" : paymentForm.feeHeads.includes("ALL") ? "ALL" : paymentForm.feeHeads,
         amount,
-        ...(!isLumpSum ? { feeBreakdown } : {}),
+        ...(!isLumpSum ? {
+          feeBreakdown,
+          // feeMonths: paymentForm.feeMonths,
+        } : {}),
         paymentType: paymentForm.paymentType,
       });
       const data = response?.data?.data;

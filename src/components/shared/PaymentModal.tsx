@@ -114,9 +114,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
   const [pendingPayment, setPendingPayment] = useState<{ full: boolean; lumpSum: boolean } | null>(null);
 
   const studentId = student?.studentId ?? '';
-  const paid = student?.paidFee ?? 0;
   const remaining = student?.dueFee ?? 0;
-  const total = student?.totalFee ?? 0;
   const isLumpSumSeason = new Date().getMonth() + 1 <= 8;
   const lumpSumLocked = Boolean(student?.lumpSumPaid);
 
@@ -233,7 +231,10 @@ export function PaymentModal({ student, open, onClose, onDone }: {
         studentId: student.studentId,
         feeHead: 'ALL',
         amount: value,
-        ...(!lumpSum ? { feeBreakdown: buildFeeBreakdown(value) } : {}),
+        ...(!lumpSum ? {
+          feeBreakdown: buildFeeBreakdown(value),
+          // feeMonths: selectedFeeMonths,
+        } : {}),
         paymentMode: method.toUpperCase(),
         remarks: lumpSum ? remarks.trim() || 'Academic year lump sum payment' : remarks.trim() || 'Fee payment',
         paymentType: lumpSum ? 'LUMP_SUM' : 'REGULAR',
@@ -272,7 +273,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
         <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:items-center sm:justify-end sm:gap-3">
           {hasPayableLumpSum ? (
             <Button variant="outline" className="w-full whitespace-nowrap sm:w-auto" onClick={() => requestPayment(false, true)}>
-              Pay Lump Sum ({formatCurrency(preview.lumpSumAmount)})
+              Pay Lump Sum ({formatCurrency(preview?.lumpSumAmount ?? 0)})
             </Button>
           ) : null}
           <Button variant="outline" className="w-full whitespace-nowrap sm:w-auto" onClick={() => requestPayment(true)} disabled={!canPaySelectedFee}>
@@ -283,12 +284,6 @@ export function PaymentModal({ student, open, onClose, onDone }: {
           </Button>
         </div>
       }>
-      {/* <div className="mb-5 grid grid-cols-3 gap-3">
-        <SummaryTile label="Total Fee" value={formatCurrency(total)} />
-        <SummaryTile label="Paid" value={formatCurrency(paid)} tone="text-emerald-600" />
-        <SummaryTile label="Remaining" value={formatCurrency(remaining)} tone="text-rose-600" />
-      </div> */}
-
       {calculation ? (
         <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/40">
           <div className="flex items-center justify-between gap-4">
@@ -347,11 +342,11 @@ export function PaymentModal({ student, open, onClose, onDone }: {
             <div>
               <p className="text-sm font-semibold text-slate-900 dark:text-white">Full-year lump sum</p>
               <p className="text-xs text-slate-600 dark:text-slate-300">
-                Pay all remaining academic fees together and save {formatCurrency(preview.additionalDiscount ?? 0)}.
+                Pay all remaining academic fees together and save {formatCurrency(preview?.additionalDiscount ?? 0)}.
               </p>
             </div>
             <p className="font-display text-xl font-bold text-brand-700 dark:text-brand-300">
-              {formatCurrency(preview.lumpSumAmount)}
+              {formatCurrency(preview?.lumpSumAmount ?? 0)}
             </p>
           </div>
         </div>
@@ -480,17 +475,6 @@ export function PaymentModal({ student, open, onClose, onDone }: {
         tone="success"
       />
     </Modal>
-  );
-}
-
-function SummaryTile({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="rounded-xl bg-slate-50 p-3 text-center dark:bg-slate-800/60">
-      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-      <p className={`mt-1 font-display text-sm font-bold ${tone ?? 'text-slate-900 dark:text-white'}`}>
-        {value}
-      </p>
-    </div>
   );
 }
 
