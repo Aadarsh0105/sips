@@ -1,5 +1,5 @@
 export const CLASS_OPTIONS = [
-  { label: 'Nursery', value: 'Nursery' },
+  { label: 'Nursery', value: 'NURSERY' },
   { label: 'LKG', value: 'LKG' },
   { label: 'UKG', value: 'UKG' },
   { label: 'Class-1', value: '1' },
