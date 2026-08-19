@@ -165,7 +165,7 @@ export function StudentPortal() {
       : paymentForm.feeHeads;
     let balance = amount;
     const feeBreakdown = selectedHeads.reduce<Record<string, number>>((breakdown, head) => {
-      const due = head === "MONTHLY" || head === "BUS"
+      const due = !paymentForm.feeHeads.includes("ALL") && (head === "MONTHLY" || head === "BUS")
         ? monthOptions[head].filter((item) => paymentForm.feeMonths[head].includes(item.month)).reduce((sum, item) => sum + item.due, 0)
         : Number(feeCalculation?.dueBreakdown?.[head] ?? 0);
       const allocated = Math.min(due, balance);

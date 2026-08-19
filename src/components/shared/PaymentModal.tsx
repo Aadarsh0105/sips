@@ -212,7 +212,7 @@ export function PaymentModal({ student, open, onClose, onDone }: {
       : feeHeads;
     let balance = value;
     return selectedHeads.reduce<Record<string, number>>((breakdown, head) => {
-      const due = head === 'MONTHLY' || head === 'BUS'
+      const due = !feeHeads.includes('ALL') && (head === 'MONTHLY' || head === 'BUS')
         ? selectedMonthTotal(head)
         : Number(calculation?.dueBreakdown?.[head] ?? 0);
       const allocated = Math.min(due, balance);
