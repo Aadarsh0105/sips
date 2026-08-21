@@ -35,6 +35,7 @@ export function StudentDetailModal({
   onPromote,
   onDelete,
   onDeleteLateFeeWaiver,
+  feeCalculation,
 }: {
   student: StudentRecord | null;
   open: boolean;
@@ -50,6 +51,7 @@ export function StudentDetailModal({
   onPromote?: () => void;
   onDelete?: () => void;
   onDeleteLateFeeWaiver?: (waiver: any) => void;
+  feeCalculation?: any;
 }) {
   if (!student) return null;
 
@@ -123,6 +125,44 @@ export function StudentDetailModal({
           <MiniStat label="Bus Facility" value={(student as any).hasBusFacility ? 'Active' : 'Not Active'} tone={(student as any).hasBusFacility ? 'text-emerald-600' : 'text-slate-600'} />
           <MiniStat label="Current Bus Fee" value={formatCurrency((student as any).busFee ?? 0)} />
         </div>
+
+        {feeCalculation ? (
+          <div className="space-y-3 rounded-xl border border-slate-200 p-3 sm:p-4 dark:border-slate-800">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h4 className="font-display text-sm font-semibold text-slate-900 dark:text-white">Current Payable Fees</h4>
+                <p className="text-xs text-slate-500">Calculated monthly, bus, late, and other fees</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-slate-400">Total Due</p>
+                <p className="font-display text-lg font-bold text-rose-600">{formatCurrency(feeCalculation.dueFee ?? 0)}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3 text-center dark:bg-slate-800/50">
+              <MiniStat label="Calculated Fee" value={formatCurrency(feeCalculation.totalFee ?? 0)} />
+              <MiniStat label="Paid" value={formatCurrency(feeCalculation.paidFee ?? 0)} tone="text-emerald-600" />
+              <MiniStat label="Late Fee Due" value={formatCurrency(feeCalculation.payableLateFee ?? 0)} tone="text-rose-600" />
+            </div>
+            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+              <div className="grid min-w-[480px] grid-cols-4 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <span>Fee Head</span>
+                <span className="text-right">Total</span>
+                <span className="text-right">Paid</span>
+                <span className="text-right">Due</span>
+              </div>
+              {Object.keys(feeCalculation.feeBreakdown ?? {})
+                .filter((head) => Number(feeCalculation.feeBreakdown?.[head] ?? 0) > 0 || Number(feeCalculation.paidBreakdown?.[head] ?? 0) > 0 || Number(feeCalculation.dueBreakdown?.[head] ?? 0) > 0)
+                .map((head) => (
+                  <div key={head} className="grid min-w-[480px] grid-cols-4 border-t border-slate-100 px-3 py-2.5 text-sm dark:border-slate-800">
+                    <span className="font-medium text-slate-700 dark:text-slate-200">{head.replace(/_/g, ' ')}</span>
+                    <span className="text-right text-slate-700 dark:text-slate-200">{formatCurrency(feeCalculation.feeBreakdown?.[head] ?? 0)}</span>
+                    <span className="text-right text-emerald-600">{formatCurrency(feeCalculation.paidBreakdown?.[head] ?? 0)}</span>
+                    <span className="text-right font-semibold text-rose-600">{formatCurrency(feeCalculation.dueBreakdown?.[head] ?? 0)}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        ) : null}
 
         {busFacilityHistory.length > 0 ? (
           <div className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-800">

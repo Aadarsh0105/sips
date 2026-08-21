@@ -124,9 +124,13 @@ export function StudentPortal() {
     }
     try {
       setDetailLoadingId(item.studentId);
-      const response = await api.get(`${API.STUDENTS}/${recordId}`);
-      const detail = response?.data?.data;
+      const [detailResponse, calculationResponse] = await Promise.all([
+        api.get(`${API.STUDENTS}/${recordId}`),
+        api.post(`${API.FEES}/calculate`, { studentId: item.studentId, feeHead: "ALL" }),
+      ]);
+      const detail = detailResponse?.data?.data;
       if (!detail) throw new Error('Student details not found');
+      setFeeCalculation(calculationResponse?.data?.data ?? null);
       setSelectedStudent({ ...item, ...detail, lumpSumPreview: item.lumpSumPreview });
       setSelectedStudentDetail(detail as StudentRecord);
     } catch (error: any) {
@@ -333,7 +337,9 @@ export function StudentPortal() {
         onClose={() => {
           setSelectedStudent(null);
           setSelectedStudentDetail(null);
+          setFeeCalculation(null);
         }}
+        feeCalculation={feeCalculation}
         onPay={Number(selectedStudentDetail?.dueFee ?? 0) > 0 ? openPaymentModal : undefined}
         onViewReceipt={() => undefined}
         hideHistory
