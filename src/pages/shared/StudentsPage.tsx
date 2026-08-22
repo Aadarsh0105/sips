@@ -319,7 +319,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
           </Field>
         </div>
       </Modal>
-      <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />
+      <ReceiptModal payment={receipt} student={historyStudent ?? detail} onClose={() => setReceipt(null)} />
       <Modal
         open={!!promoteTarget}
         onClose={() => setPromoteTarget(null)}

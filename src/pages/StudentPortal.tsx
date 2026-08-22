@@ -21,11 +21,14 @@ import { Button } from "../components/ui/Button";
 import { Field, Input, Select } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
 import { StudentDetailModal } from "../components/students/StudentDetailModal";
+import { StudentPaymentHistoryModal } from "../components/students/StudentPaymentHistoryModal";
+import { ReceiptModal } from "../components/shared/ReceiptModal";
 import { StudentChatbot } from "../components/portal/StudentChatbot";
 import { useData } from "../contexts/DataContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { formatDate } from "../lib/utils";
 import type { StudentRecord } from "../features/students/studentsSlice";
+import type { Payment, Student } from "../lib/types";
 
 const CAMPUS = "/0cff149f-67fb-4097-8cd3-d6d7bfb6e95a.jpg";
 
@@ -38,6 +41,8 @@ export function StudentPortal() {
   const [searched, setSearched] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [selectedStudentDetail, setSelectedStudentDetail] = useState<StudentRecord | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [receipt, setReceipt] = useState<Payment | null>(null);
   const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [qrLoading, setQrLoading] = useState(false);
@@ -341,8 +346,21 @@ export function StudentPortal() {
         }}
         feeCalculation={feeCalculation}
         onPay={Number(selectedStudentDetail?.dueFee ?? 0) > 0 ? openPaymentModal : undefined}
+        onViewHistory={() => setHistoryOpen(true)}
         onViewReceipt={() => undefined}
-        hideHistory
+      />
+
+      <StudentPaymentHistoryModal
+        student={selectedStudentDetail}
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onViewReceipt={setReceipt}
+      />
+
+      <ReceiptModal
+        payment={receipt}
+        student={selectedStudentDetail ? mapPortalReceiptStudent(selectedStudentDetail) : null}
+        onClose={() => setReceipt(null)}
       />
 
       <StudentChatbot />
@@ -549,6 +567,34 @@ function QrPreviewModal({ open, qrData, student, onClose }: { open: boolean; qrD
       </div>
     </Modal>
   );
+}
+
+function mapPortalReceiptStudent(student: StudentRecord): Student {
+  return {
+    id: student.studentId,
+    admissionNumber: student.admissionNo ?? '',
+    name: student.name,
+    fatherName: student.fatherName ?? '',
+    motherName: student.motherName ?? '',
+    className: student.className ?? '',
+    section: student.section ?? '',
+    rollNumber: '',
+    gender: (student.gender || 'OTHER') as Student['gender'],
+    dob: student.dob ?? '',
+    mobile: student.mobile ?? '',
+    parentMobile: '',
+    address: student.address ?? '',
+    email: student.email ?? '',
+    admissionDate: student.admissionDate ?? '',
+    monthlyFee: student.monthlyFee ?? 0,
+    openingDue: student.openingDue ?? 0,
+    session: '',
+    totalFee: student.totalFee ?? 0,
+    discount: 0,
+    fine: 0,
+    dueDate: '',
+    createdAt: student.createdAt ?? '',
+  };
 }
 
 function InfoTile({ label, value }: { label: string; value: string }) {

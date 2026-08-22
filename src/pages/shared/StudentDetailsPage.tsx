@@ -358,7 +358,7 @@ export function StudentDetailsPage() {
 
       <PaymentModal student={student} open={paying} onClose={() => setPaying(false)} onDone={setReceipt} />
       <StudentPaymentHistoryModal student={student} open={historyOpen} onClose={() => setHistoryOpen(false)} onViewReceipt={setReceipt} />
-      <ReceiptModal payment={receipt} onClose={() => setReceipt(null)} />
+      <ReceiptModal payment={receipt} student={student} onClose={() => setReceipt(null)} />
       <StudentFormModal
         open={editOpen}
         onClose={() => {

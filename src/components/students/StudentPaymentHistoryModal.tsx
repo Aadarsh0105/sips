@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
+import { ReceiptIcon } from 'lucide-react';
 import api from '../../api/axios';
 import { API } from '../../api/endpoints';
 import { Modal } from '../ui/Modal';
@@ -140,8 +141,8 @@ export function StudentPaymentHistoryModal({
                       {onViewReceipt ? (
                         <td className="px-4 py-2.5 text-right">
                           {payment.paymentStatus === 'SUCCESS' ? (
-                            <Button size="sm" variant="ghost" onClick={() => onViewReceipt(mappedPayment)}>
-                              Receipt
+                            <Button size="sm" variant="outline" className="whitespace-nowrap border-brand-200 text-brand-600 hover:bg-brand-50 dark:border-brand-500/30 dark:text-brand-300 dark:hover:bg-brand-500/10" onClick={() => onViewReceipt(mappedPayment)}>
+                              <ReceiptIcon className="h-4 w-4" /> View Receipt
                             </Button>
                           ) : null}
                         </td>

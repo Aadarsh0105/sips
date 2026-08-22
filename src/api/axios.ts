@@ -16,6 +16,7 @@ api.interceptors.request.use((config) => {
     (requestMethod === "get" && /^\/api\/students\/[^/]+$/.test(requestUrl)) ||
     requestUrl.includes("/api/fees/calculate") ||
     requestUrl.includes("/api/fees/lump-sum-preview/") ||
+    (requestMethod === "get" && /^\/api\/fees\/history\/[^/]+$/.test(requestUrl)) ||
     requestUrl.includes("/api/fees/online/create-qr");
   if (publicRequest) {
     if (config.headers) delete config.headers.Authorization;
