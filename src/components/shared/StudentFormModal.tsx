@@ -317,7 +317,13 @@ export function StudentFormModal({
         busFee: valid.hasBusFacility ? Number(valid.busFee ?? 0) : 0,
       };
       if (editing) {
-        void dispatch(updateStudent({ id: editing._id, payload: payload as any })).then(() => dispatch(fetchStudents()));
+        const {
+          className: _className,
+          hasBusFacility: _hasBusFacility,
+          busFee: _busFee,
+          ...updatePayload
+        } = payload;
+        void dispatch(updateStudent({ id: editing._id, payload: updatePayload as any })).then(() => dispatch(fetchStudents()));
         toast.success('Student updated successfully.');
       } else {
         void dispatch(createStudent({ ...payload, openingDue: 0 } as any)).then(() => dispatch(fetchStudents()));
@@ -383,7 +389,7 @@ export function StudentFormModal({
           {errors.dob ? <p className="mt-1 text-xs text-rose-500">{errors.dob}</p> : null}
         </Field>
         <Field label="Class" required>
-          <Select value={form.className} onChange={(e) => set('className', e.target.value)}>
+          <Select value={form.className} onChange={(e) => set('className', e.target.value)} disabled={Boolean(editing)}>
             <option value="">Select class</option>
             {CLASS_OPTIONS.map((c) => (
               <option key={c.value} value={c.value}>{c.label}</option>
@@ -462,6 +468,7 @@ export function StudentFormModal({
         <Field label="Bus Facility" required>
           <Select
             value={form.hasBusFacility ? 'YES' : 'NO'}
+            disabled={Boolean(editing)}
             onChange={(e) => {
               const enabled = e.target.value === 'YES';
               set('hasBusFacility', enabled);
@@ -478,6 +485,7 @@ export function StudentFormModal({
               type="text"
               inputMode="decimal"
               value={String(form.busFee)}
+              disabled={Boolean(editing)}
               onChange={(e) => {
                 if (/^\d*(\.\d{0,2})?$/.test(e.target.value)) set('busFee', Number(e.target.value || 0));
               }}

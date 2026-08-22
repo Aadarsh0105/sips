@@ -19,6 +19,7 @@ import { exportCSV } from '../../lib/export';
 import type { Payment, SchoolSettings, Student } from '../../lib/types';
 
 type FeeHistoryItem = {
+  feeBreakdown?: Record<string, number>;
   _id: string;
   receiptNo: string;
   student:
@@ -63,6 +64,7 @@ function mapToPayment(item: FeeHistoryItem): Payment {
     date: item.paymentDate,
     remainingAfter: 0,
     note: item.remarks || undefined,
+    feeBreakdown: item.feeBreakdown,
   };
 }
 

@@ -10,6 +10,7 @@ import type { Payment } from '../../lib/types';
 import type { StudentRecord } from '../../features/students/studentsSlice';
 
 type FeeHistoryItem = {
+  feeBreakdown?: Record<string, number>;
   _id: string;
   receiptNo: string;
   studentId: string;
@@ -116,6 +117,7 @@ export function StudentPaymentHistoryModal({
                     date: payment.paymentDate,
                     remainingAfter: 0,
                     note: payment.remarks || undefined,
+                    feeBreakdown: payment.feeBreakdown,
                   };
 
                   return (

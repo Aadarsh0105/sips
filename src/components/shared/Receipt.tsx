@@ -20,6 +20,9 @@ export function Receipt({
   settings: SchoolSettings;
   elementId?: string;
 }) {
+  const paidFeeBreakdown = Object.entries(payment.feeBreakdown ?? {})
+    .filter(([, amount]) => Number(amount) > 0);
+
   return (
     <div
       id={elementId}
@@ -78,8 +81,14 @@ export function Receipt({
           </tr>
         </thead>
         <tbody>
+          {paidFeeBreakdown.map(([feeHead, amount]) => (
+            <tr key={feeHead} className="border-b border-slate-100">
+              <td className="px-4 py-2.5 font-medium">{feeHead.replace(/_/g, ' ')}</td>
+              <td className="px-4 py-2.5 text-right font-medium">{formatCurrency(amount)}</td>
+            </tr>
+          ))}
           <tr className="border-b border-slate-100">
-            <td className="px-4 py-2.5 font-semibold">Amount Paid</td>
+            <td className="px-4 py-2.5 font-semibold">{paidFeeBreakdown.length ? 'Total Paid' : 'Amount Paid'}</td>
             <td className="px-4 py-2.5 text-right font-semibold text-emerald-600">{formatCurrency(payment.amount)}</td>
           </tr>
           {/* {payment.remainingAfter !== undefined ? (

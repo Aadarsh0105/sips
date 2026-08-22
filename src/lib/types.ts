@@ -60,6 +60,7 @@ export interface Payment {
   date: string; // ISO
   remainingAfter: number;
   note?: string;
+  feeBreakdown?: Record<string, number>;
 }
 
 export interface SchoolSettings {
