@@ -1,9 +1,13 @@
 ﻿import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   BadgeCheckIcon,
+  CheckCircle2Icon,
   ClockIcon,
+  LoaderCircleIcon,
+  MessageCircleIcon,
   MoonIcon,
   SearchIcon,
   ShieldCheckIcon,
@@ -15,7 +19,11 @@ import api from "../api/axios";
 import { API } from "../api/endpoints";
 import { useAppDispatch } from "../hooks/useAppDispatch";
 import { useAppSelector } from "../hooks/useAppSelector";
-import { clearStudentSearch, searchStudent } from "../features/studentSearch/studentSearchSlice";
+import {
+  clearStudentSearch,
+  requestPublicStudentSearchOtp,
+  verifyPublicStudentSearchOtp,
+} from "../features/studentSearch/studentSearchSlice";
 import { SchoolLogo } from "../components/shared/SchoolLogo";
 import { Button } from "../components/ui/Button";
 import { Field, Input, Select } from "../components/ui/Input";
@@ -34,7 +42,7 @@ const CAMPUS = "/0cff149f-67fb-4097-8cd3-d6d7bfb6e95a.jpg";
 
 export function StudentPortal() {
   const dispatch = useAppDispatch();
-  const { student, loading, error } = useAppSelector((state) => state.studentSearch);
+  const { student, loading, error, otpRequest } = useAppSelector((state) => state.studentSearch);
   const { settings } = useData();
   const { theme, toggle } = useTheme();
   const [query, setQuery] = useState("");
@@ -62,6 +70,22 @@ export function StudentPortal() {
   });
   const [feeCalculation, setFeeCalculation] = useState<any | null>(null);
   const [paymentLumpSumPreview, setPaymentLumpSumPreview] = useState<any | null>(null);
+  const [searchOtp, setSearchOtp] = useState<string[]>(Array(6).fill(""));
+  const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
+  const searchOtpRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  useEffect(() => {
+    if (!otpRequest) return;
+    setSearchOtp(Array(6).fill(""));
+    setOtpSecondsLeft(otpRequest.expiresIn || 300);
+    window.setTimeout(() => searchOtpRefs.current[0]?.focus(), 0);
+  }, [otpRequest?.requestId]);
+
+  useEffect(() => {
+    if (!otpRequest || otpSecondsLeft <= 0) return;
+    const timer = window.setInterval(() => setOtpSecondsLeft((current) => Math.max(0, current - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [otpRequest, otpSecondsLeft]);
 
   const lumpSumPreview = paymentLumpSumPreview ?? selectedStudent?.lumpSumPreview ?? null;
   const currentMonth = new Date().getMonth() + 1;
@@ -75,14 +99,34 @@ export function StudentPortal() {
       toast.error("Please enter a Student ID or mobile number.");
       return;
     }
-    setSearched(true);
+    setSearched(false);
     dispatch(clearStudentSearch());
-    const resultAction = await dispatch(searchStudent(value));
-    if (searchStudent.fulfilled.match(resultAction)) {
-      toast.success(`Student Found`);
+    const resultAction = await dispatch(requestPublicStudentSearchOtp(value));
+    if (requestPublicStudentSearchOtp.fulfilled.match(resultAction)) {
+      toast.success("OTP sent to the registered WhatsApp number.");
       return;
     }
     toast.error((resultAction.payload as string) ?? "No student found.");
+  };
+
+  const verifySearchOtp = async () => {
+    if (!otpRequest) return;
+    const otp = searchOtp.join("");
+    if (otp.length !== 6) {
+      toast.error("Please enter the complete 6-digit OTP.");
+      return;
+    }
+    if (otpSecondsLeft <= 0) {
+      toast.error("OTP has expired. Please start the search again.");
+      return;
+    }
+    const resultAction = await dispatch(verifyPublicStudentSearchOtp({ requestId: otpRequest.requestId, otp }));
+    if (verifyPublicStudentSearchOtp.fulfilled.match(resultAction)) {
+      setSearched(true);
+      toast.success(`${resultAction.payload.length} student${resultAction.payload.length === 1 ? "" : "s"} found.`);
+      return;
+    }
+    toast.error((resultAction.payload as string) ?? "OTP verification failed.");
   };
 
   const openPaymentModal = async () => {
@@ -169,29 +213,17 @@ export function StudentPortal() {
       toast.error(`Amount cannot exceed ₹${selectedDue}.`);
       return;
     }
-    const selectedHeads = paymentForm.feeHeads.includes("ALL")
-      ? Object.keys(feeCalculation?.dueBreakdown ?? {}).filter((head) => head !== "ALL")
-      : paymentForm.feeHeads;
-    let balance = amount;
-    const feeBreakdown = selectedHeads.reduce<Record<string, number>>((breakdown, head) => {
-      const due = !paymentForm.feeHeads.includes("ALL") && (head === "MONTHLY" || head === "BUS")
-        ? monthOptions[head].filter((item) => paymentForm.feeMonths[head].includes(item.month)).reduce((sum, item) => sum + item.due, 0)
-        : Number(feeCalculation?.dueBreakdown?.[head] ?? 0);
-      const allocated = Math.min(due, balance);
-      if (allocated > 0) breakdown[head] = allocated;
-      balance -= allocated;
-      return breakdown;
-    }, {});
     try {
       setQrLoading(true);
+      const feeHead = isLumpSum
+        ? "MONTHLY"
+        : paymentForm.feeHeads.includes("ALL") || paymentForm.feeHeads.length !== 1
+          ? "ALL"
+          : paymentForm.feeHeads[0];
       const response = await api.post(API.FEES_ONLINE_CREATE_QR, {
         studentId: selectedStudent.studentId,
-        feeHead: isLumpSum ? "MONTHLY" : paymentForm.feeHeads.includes("ALL") ? "ALL" : paymentForm.feeHeads,
+        feeHead,
         amount,
-        ...(!isLumpSum ? {
-          feeBreakdown,
-          // feeMonths: paymentForm.feeMonths,
-        } : {}),
         paymentType: paymentForm.paymentType,
       });
       const data = response?.data?.data;
@@ -202,6 +234,26 @@ export function StudentPortal() {
       toast.error(error?.response?.data?.message ?? "Unable to generate payment QR.");
     } finally {
       setQrLoading(false);
+    }
+  };
+
+  const refreshStudentAfterOnlinePayment = async () => {
+    if (!selectedStudent) return;
+    const recordId = selectedStudent._id ?? selectedStudent.id;
+    try {
+      const [detailResponse, calculationResponse] = await Promise.all([
+        recordId ? api.get(`${API.STUDENTS}/${recordId}`) : Promise.resolve(null),
+        api.post(`${API.FEES}/calculate`, { studentId: selectedStudent.studentId, feeHead: "ALL" }),
+      ]);
+      const detail = detailResponse?.data?.data;
+      const calculation = calculationResponse?.data?.data;
+      if (detail) {
+        setSelectedStudentDetail(detail as StudentRecord);
+        setSelectedStudent((current: any) => current ? { ...current, ...detail } : current);
+      }
+      if (calculation) setFeeCalculation(calculation);
+    } catch {
+      toast.info("Payment received. Updated fee details will appear on the next refresh.");
     }
   };
 
@@ -284,6 +336,18 @@ export function StudentPortal() {
         </div>
       </section>
 
+      <PublicSearchOtpModal
+        open={Boolean(otpRequest)}
+        maskedMobile={otpRequest?.maskedMobile ?? ""}
+        otp={searchOtp}
+        secondsLeft={otpSecondsLeft}
+        loading={loading}
+        inputRefs={searchOtpRefs}
+        onChange={setSearchOtp}
+        onCancel={() => dispatch(clearStudentSearch())}
+        onVerify={verifySearchOtp}
+      />
+
       <section className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
         {Array.isArray(student) && student.length > 0 ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -334,7 +398,13 @@ export function StudentPortal() {
         calculation={feeCalculation}
       />
 
-      <QrPreviewModal open={Boolean(qrData)} qrData={qrData} student={selectedStudent} onClose={() => setQrData(null)} />
+      <QrPreviewModal
+        open={Boolean(qrData)}
+        qrData={qrData}
+        student={selectedStudent}
+        onClose={() => setQrData(null)}
+        onPaid={refreshStudentAfterOnlinePayment}
+      />
 
       <StudentDetailModal
         student={selectedStudentDetail}
@@ -375,6 +445,91 @@ export function StudentPortal() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function PublicSearchOtpModal({
+  open,
+  maskedMobile,
+  otp,
+  secondsLeft,
+  loading,
+  inputRefs,
+  onChange,
+  onCancel,
+  onVerify,
+}: {
+  open: boolean;
+  maskedMobile: string;
+  otp: string[];
+  secondsLeft: number;
+  loading: boolean;
+  inputRefs: React.MutableRefObject<Array<HTMLInputElement | null>>;
+  onChange: React.Dispatch<React.SetStateAction<string[]>>;
+  onCancel: () => void;
+  onVerify: () => void;
+}) {
+  const updateDigit = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, "").slice(-1);
+    onChange((current) => current.map((item, itemIndex) => itemIndex === index ? digit : item));
+    if (digit && index < 5) inputRefs.current[index + 1]?.focus();
+  };
+
+  const pasteOtp = (event: React.ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    const digits = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6).split("");
+    if (!digits.length) return;
+    onChange(Array.from({ length: 6 }, (_, index) => digits[index] ?? ""));
+    inputRefs.current[Math.min(digits.length, 6) - 1]?.focus();
+  };
+
+  const time = `${String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:${String(secondsLeft % 60).padStart(2, "0")}`;
+
+  return (
+    <Modal
+      open={open}
+      onClose={onCancel}
+      title="Verify Student Search"
+      subtitle={`Enter the OTP sent to ${maskedMobile || "the registered mobile number"}`}
+      footer={(
+        <>
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button onClick={onVerify} disabled={loading || secondsLeft <= 0}>
+            {loading ? "Verifying..." : "Verify & Search"}
+          </Button>
+        </>
+      )}
+    >
+      <div className="space-y-5">
+        <div className="flex items-center gap-3 rounded-xl border border-brand-100 bg-brand-50 p-3 text-sm text-brand-700 dark:border-brand-500/20 dark:bg-brand-500/10 dark:text-brand-200">
+          <MessageCircleIcon className="h-5 w-5 shrink-0" />
+          <span>For privacy, student details are shown only after OTP verification.</span>
+        </div>
+        <Field label="6-digit OTP" required>
+          <div className="grid grid-cols-6 gap-2" onPaste={pasteOtp}>
+            {otp.map((digit, index) => (
+              <Input
+                key={index}
+                ref={(element) => { inputRefs.current[index] = element; }}
+                aria-label={`OTP digit ${index + 1}`}
+                inputMode="numeric"
+                autoComplete={index === 0 ? "one-time-code" : "off"}
+                maxLength={1}
+                value={digit}
+                onChange={(event) => updateDigit(index, event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Backspace" && !otp[index] && index > 0) inputRefs.current[index - 1]?.focus();
+                }}
+                className="h-12 px-0 text-center text-lg font-bold"
+              />
+            ))}
+          </div>
+        </Field>
+        <p className={`text-center text-sm font-semibold ${secondsLeft > 0 ? "text-slate-500" : "text-rose-500"}`}>
+          {secondsLeft > 0 ? `OTP expires in ${time}` : "OTP expired. Cancel and search again to request a new OTP."}
+        </p>
+      </div>
+    </Modal>
   );
 }
 
@@ -551,19 +706,107 @@ function PortalMonthSelect({ label, options, selected, onChange }: {
   );
 }
 
-function QrPreviewModal({ open, qrData, student, onClose }: { open: boolean; qrData: any | null; student: any; onClose: () => void; }) {
+function QrPreviewModal({ open, qrData, student, onClose, onPaid }: {
+  open: boolean;
+  qrData: any | null;
+  student: any;
+  onClose: () => void;
+  onPaid: () => Promise<void>;
+}) {
+  const [paymentStatus, setPaymentStatus] = useState("PENDING");
+  const [statusMessage, setStatusMessage] = useState("Waiting for payment...");
+
+  useEffect(() => {
+    if (!open || !qrData?.qrId) return;
+    let active = true;
+    let timer: number | undefined;
+    setPaymentStatus("PENDING");
+    setStatusMessage("Waiting for payment...");
+
+    const checkStatus = async () => {
+      try {
+        const response = await api.get(`${API.FEES_ONLINE_STATUS}/${encodeURIComponent(qrData.qrId)}`);
+        if (!active) return;
+        const data = response?.data?.data;
+        const nextStatus = String(data?.status ?? "PENDING").toUpperCase();
+        if (data?.paid === true) {
+          setPaymentStatus("SUCCESS");
+          setStatusMessage("Payment received successfully.");
+          await onPaid();
+          if (active) toast.success("Payment completed successfully.");
+          return;
+        }
+        if (["FAILED", "EXPIRED", "CANCELLED"].includes(nextStatus)) {
+          setPaymentStatus(nextStatus);
+          setStatusMessage(nextStatus === "EXPIRED" ? "This payment QR has expired." : "Payment could not be completed.");
+          return;
+        }
+        setPaymentStatus(nextStatus);
+        setStatusMessage("Waiting for payment... This page updates automatically.");
+      } catch {
+        if (!active) return;
+        setStatusMessage("Checking payment status... Please keep this window open.");
+      }
+      if (active) timer = window.setTimeout(checkStatus, 3000);
+    };
+
+    timer = window.setTimeout(checkStatus, 3000);
+    return () => {
+      active = false;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [open, qrData?.qrId]);
+
   if (!qrData || !student) return null;
+  const paid = paymentStatus === "SUCCESS";
+  const failed = ["FAILED", "EXPIRED", "CANCELLED"].includes(paymentStatus);
   return (
-    <Modal open={open} onClose={onClose} title="Payment QR Generated" subtitle={`${student.name} · ${qrData.paymentType}`} size="lg" footer={<Button onClick={onClose}>Done</Button>}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={paid ? "Payment Successful" : "Complete UPI Payment"}
+      subtitle={`${student.name} · ${qrData.paymentType}`}
+      size="lg"
+      footer={<Button onClick={onClose}>{paid ? "Close" : "Close Payment"}</Button>}
+    >
       <div className="flex flex-col items-center gap-4 text-center">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <img src={qrData.imageUrl} alt="Payment QR" className="h-72 w-72 object-contain" />
-        </div>
+        {paid ? (
+          <div className="flex w-full flex-col items-center rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-8 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300">
+              <CheckCircle2Icon className="h-12 w-12" />
+            </span>
+            <h3 className="mt-4 font-display text-xl font-bold text-emerald-700 dark:text-emerald-300">Payment received</h3>
+            <p className="mt-1 text-sm text-emerald-700/80 dark:text-emerald-200">Your fee balance has been updated successfully.</p>
+            <p className="mt-4 text-2xl font-bold text-slate-900 dark:text-white">₹{Number(qrData.amount).toLocaleString("en-IN")}</p>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <img src={qrData.imageUrl} alt="Payment QR" className="h-72 w-72 object-contain" />
+            </div>
+            <a
+              href={qrData.imageUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+            >
+              Open UPI payment page
+            </a>
+          </>
+        )}
         <div><p className="text-xs text-slate-400">QR ID</p><p className="font-semibold text-slate-900 dark:text-white">{qrData.qrId}</p></div>
-        <div className="grid w-full grid-cols-2 gap-3 text-sm">
-          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50"><p className="text-xs text-slate-400">Amount</p><p className="font-semibold text-slate-900 dark:text-white">₹{qrData.amount}</p></div>
-          <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50"><p className="text-xs text-slate-400">Status</p><p className="font-semibold text-amber-600">PENDING</p></div>
-        </div>
+        {!paid ? (
+          <div className="grid w-full grid-cols-2 gap-3 text-sm">
+            <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50"><p className="text-xs text-slate-400">Amount</p><p className="font-semibold text-slate-900 dark:text-white">₹{Number(qrData.amount).toLocaleString("en-IN")}</p></div>
+            <div className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50"><p className="text-xs text-slate-400">Status</p><p className={`font-semibold ${failed ? "text-rose-600" : "text-amber-600"}`}>{paymentStatus}</p></div>
+          </div>
+        ) : null}
+        {!paid ? (
+          <div className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium ${failed ? "bg-rose-50 text-rose-600 dark:bg-rose-500/10" : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"}`}>
+            {!failed ? <LoaderCircleIcon className="h-4 w-4 animate-spin" /> : null}
+            {statusMessage}
+          </div>
+        ) : null}
       </div>
     </Modal>
   );

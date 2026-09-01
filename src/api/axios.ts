@@ -12,12 +12,13 @@ api.interceptors.request.use((config) => {
   const requestUrl = config.url ?? "";
   const requestMethod = (config.method ?? "get").toLowerCase();
   const publicRequest =
-    requestUrl.includes("/api/students/search") ||
+    requestUrl.includes("/api/public/students/search/") ||
     (requestMethod === "get" && /^\/api\/students\/[^/]+$/.test(requestUrl)) ||
     requestUrl.includes("/api/fees/calculate") ||
     requestUrl.includes("/api/fees/lump-sum-preview/") ||
     (requestMethod === "get" && /^\/api\/fees\/history\/[^/]+$/.test(requestUrl)) ||
-    requestUrl.includes("/api/fees/online/create-qr");
+    requestUrl.includes("/api/fees/online/create-qr") ||
+    requestUrl.includes("/api/fees/online/status/");
   if (publicRequest) {
     if (config.headers) delete config.headers.Authorization;
     return config;
