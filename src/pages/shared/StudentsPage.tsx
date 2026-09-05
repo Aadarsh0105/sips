@@ -41,7 +41,7 @@ import {
 import { formatCurrency } from '../../lib/utils';
 import type { Payment } from '../../lib/types';
 
-const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 10;
 
 export function StudentsPage({ canManage }: { canManage: boolean }) {
   const dispatch = useAppDispatch();
@@ -179,8 +179,8 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
             setPage(1);
             setPageSize(Number(e.target.value));
           }}>
-            <option value="8">8 per page</option>
-            <option value="12">12 per page</option>
+            <option value="5">5 per page</option>
+            <option value="10">10 per page</option>
             <option value="20">20 per page</option>
             <option value="50">50 per page</option>
           </Select>
