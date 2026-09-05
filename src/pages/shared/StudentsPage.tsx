@@ -41,7 +41,7 @@ import {
 import { formatCurrency } from '../../lib/utils';
 import type { Payment } from '../../lib/types';
 
-const DEFAULT_PAGE_SIZE = 8;
+const DEFAULT_PAGE_SIZE = 20;
 
 export function StudentsPage({ canManage }: { canManage: boolean }) {
   const dispatch = useAppDispatch();
@@ -49,6 +49,8 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
   const location = useLocation();
   const { payments } = useData();
   const students = useAppSelector((state) => state.students.items);
+  const totalStudents = useAppSelector((state) => state.students.total);
+  const totalPages = useAppSelector((state) => state.students.totalPages);
   const studentList = Array.isArray(students) ? students : [];
   const loading = useAppSelector((state) => state.students.loading);
   const [params, setParams] = useSearchParams();
@@ -74,8 +76,13 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
   const classes = CLASS_OPTIONS;
 
   useEffect(() => {
-    void dispatch(fetchStudents());
-  }, [dispatch]);
+    void dispatch(fetchStudents({
+      page,
+      limit: pageSize,
+      includeDue: true,
+      className: classFilter === 'all' ? null : classFilter,
+    }));
+  }, [classFilter, dispatch, page, pageSize]);
 
   useEffect(() => {
     const focus = params.get('focus');
@@ -105,8 +112,12 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
     });
   }, [studentList, payments, query, classFilter]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const current = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const pageCount = Math.max(1, totalPages);
+  const current = filtered;
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
 
   useEffect(() => setPage(1), [query, classFilter, pageSize]);
 
@@ -122,7 +133,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
     <div>
       <PageHeader
         title="Students"
-        subtitle={`${studentList.length} students enrolled`}
+        subtitle={`${totalStudents} students enrolled`}
         action={
           <>
             {/* <Button variant="outline" onClick={handleExport}>
@@ -153,7 +164,10 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
               className="pl-9"
             />
           </div>
-          <Select value={classFilter} onChange={(e) => setClassFilter(e.target.value)}>
+          <Select value={classFilter} onChange={(e) => {
+            setPage(1);
+            setClassFilter(e.target.value);
+          }}>
             <option value="all">All Classes</option>
             {classes.map((c) => (
               <option key={c.value} value={c.value}>
@@ -161,7 +175,10 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
               </option>
             ))}
           </Select>
-          <Select value={String(pageSize)} onChange={(e) => setPageSize(Number(e.target.value))}>
+          <Select value={String(pageSize)} onChange={(e) => {
+            setPage(1);
+            setPageSize(Number(e.target.value));
+          }}>
             <option value="8">8 per page</option>
             <option value="12">12 per page</option>
             <option value="20">20 per page</option>
@@ -259,7 +276,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
           </div>
         )}
         <div className="border-t border-slate-100 dark:border-slate-800">
-          <Pagination page={page} pageCount={pageCount} total={filtered.length} onPage={setPage} />
+          <Pagination page={page} pageCount={pageCount} total={totalStudents} onPage={setPage} />
         </div>
       </Card>
 

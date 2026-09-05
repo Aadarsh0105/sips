@@ -45,6 +45,11 @@ export interface StudentRecord {
 
 interface StudentsState {
   items: StudentRecord[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  className: string | null;
   loading: boolean;
   saving: boolean;
   error: string | null;
@@ -52,6 +57,11 @@ interface StudentsState {
 
 const initialState: StudentsState = {
   items: [],
+  page: 1,
+  limit: 20,
+  total: 0,
+  totalPages: 1,
+  className: null,
   loading: false,
   saving: false,
   error: null,
@@ -59,10 +69,38 @@ const initialState: StudentsState = {
 
 export const fetchStudents = createAsyncThunk(
   "students/fetchStudents",
-  async (_, { rejectWithValue }) => {
+  async (
+    params: { page?: number; limit?: number; includeDue?: boolean; className?: string | null } | undefined,
+    { getState, rejectWithValue }
+  ) => {
     try {
-      const response = await api.get(API.STUDENTS);
-      return (response?.data?.data ?? response?.data ?? []) as StudentRecord[];
+      const currentState = (getState() as { students: StudentsState }).students;
+      const page = params?.page ?? currentState.page ?? 1;
+      const limit = params?.limit ?? currentState.limit ?? 20;
+      const className = params?.className !== undefined ? params.className : currentState.className;
+      const response = await api.get(API.STUDENTS, {
+        params: {
+          page,
+          limit,
+          ...(className ? { className } : {}),
+          includeDue: params?.includeDue ?? true,
+        },
+      });
+      const responseData = response?.data?.data ?? response?.data ?? [];
+      const items = Array.isArray(responseData)
+        ? responseData
+        : responseData.students ?? responseData.items ?? responseData.results ?? [];
+      const pagination = response?.data?.pagination ?? response?.data?.meta ?? responseData.pagination ?? responseData.meta ?? {};
+      const total = Number(
+        pagination.totalStudents ?? pagination.totalItems ?? pagination.totalRecords ?? pagination.total ??
+        response?.data?.total ?? responseData.total ?? items.length
+      );
+      const resolvedPage = Number(pagination.currentPage ?? pagination.page ?? responseData.page ?? page);
+      const resolvedLimit = Number(pagination.limit ?? pagination.pageSize ?? responseData.limit ?? limit);
+      const totalPages = Number(
+        pagination.totalPages ?? pagination.pages ?? responseData.totalPages ?? Math.max(1, Math.ceil(total / resolvedLimit))
+      );
+      return { items: items as StudentRecord[], page: resolvedPage, limit: resolvedLimit, total, totalPages, className };
     } catch (error: any) {
       return rejectWithValue(error?.response?.data?.message ?? "Unable to load students.");
     }
@@ -129,7 +167,12 @@ const studentsSlice = createSlice({
       })
       .addCase(fetchStudents.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
+        state.items = action.payload.items;
+        state.page = action.payload.page;
+        state.limit = action.payload.limit;
+        state.total = action.payload.total;
+        state.totalPages = action.payload.totalPages;
+        state.className = action.payload.className;
       })
       .addCase(fetchStudents.rejected, (state, action) => {
         state.loading = false;
