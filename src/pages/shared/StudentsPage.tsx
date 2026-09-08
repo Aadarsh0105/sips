@@ -10,6 +10,7 @@ import {
   PencilIcon,
   Trash2Icon,
   GraduationCapIcon,
+  FileTextIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../api/axios';
@@ -27,6 +28,7 @@ import { StudentDetailModal } from '../../components/students/StudentDetailModal
 import { StudentPaymentHistoryModal } from '../../components/students/StudentPaymentHistoryModal';
 import { PaymentModal } from '../../components/shared/PaymentModal';
 import { ReceiptModal } from '../../components/shared/ReceiptModal';
+import { NoDuesCertificateModal } from '../../components/shared/NoDuesCertificateModal';
 import { useData, deriveFee } from '../../contexts/DataContext';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { useAppSelector } from '../../hooks/useAppSelector';
@@ -72,6 +74,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
   const [promoteTarget, setPromoteTarget] = useState<StudentRecord | null>(null);
   const [promoteForm, setPromoteForm] = useState({ toClass: '', section: 'A', remarks: '' });
   const [promoting, setPromoting] = useState(false);
+  const [certificateStudent, setCertificateStudent] = useState<StudentRecord | null>(null);
 
   const classes = CLASS_OPTIONS;
 
@@ -257,6 +260,8 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
                           onView={() => navigate(`${location.pathname.startsWith('/reception') ? '/reception' : '/admin'}/student/${student._id}`)}
                           onHistory={() => setHistoryStudent(student)}
                           onPay={() => setPaying(student)}
+                          canNoDues={(student.dueFee ?? fee.remaining) <= 0}
+                          onNoDues={() => setCertificateStudent(student)}
                           onEdit={() => {
                             setEditing(student);
                             setFormOpen(true);
@@ -290,6 +295,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
         open={!!detail}
         onClose={() => setDetail(null)}
         onViewReceipt={(payment) => setReceipt(payment)}
+        onNoDuesCertificate={() => setCertificateStudent(detail)}
       />
       <StudentPaymentHistoryModal
         student={historyStudent}
@@ -337,6 +343,7 @@ export function StudentsPage({ canManage }: { canManage: boolean }) {
         </div>
       </Modal>
       <ReceiptModal payment={receipt} student={historyStudent ?? detail} onClose={() => setReceipt(null)} />
+      <NoDuesCertificateModal student={certificateStudent} open={!!certificateStudent} onClose={() => setCertificateStudent(null)} />
       <Modal
         open={!!promoteTarget}
         onClose={() => setPromoteTarget(null)}
@@ -427,9 +434,11 @@ function ActionMenu({
   menuId,
   canManage,
   canPay,
+  canNoDues,
   onView,
   onHistory,
   onPay,
+  onNoDues,
   onEdit,
   onPromote,
   onDelete,
@@ -437,9 +446,11 @@ function ActionMenu({
   menuId: string;
   canManage: boolean;
   canPay: boolean;
+  canNoDues: boolean;
   onView: () => void;
   onHistory: () => void;
   onPay: () => void;
+  onNoDues: () => void;
   onEdit: () => void;
   onPromote: () => void;
   onDelete: () => void;
@@ -474,6 +485,11 @@ function ActionMenu({
               }}
               className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
               <WalletIcon className="h-4 w-4 text-emerald-500" /> Pay Fee
+            </button>
+          ) : null}
+          {canNoDues ? (
+            <button onClick={() => { close(); onNoDues(); }} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">
+              <FileTextIcon className="h-4 w-4 text-emerald-500" /> No Dues Certificate
             </button>
           ) : null}
           <button

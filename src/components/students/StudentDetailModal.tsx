@@ -35,6 +35,7 @@ export function StudentDetailModal({
   onPromote,
   onDelete,
   onDeleteLateFeeWaiver,
+  onNoDuesCertificate,
   feeCalculation,
 }: {
   student: StudentRecord | null;
@@ -51,6 +52,7 @@ export function StudentDetailModal({
   onPromote?: () => void;
   onDelete?: () => void;
   onDeleteLateFeeWaiver?: (waiver: any) => void;
+  onNoDuesCertificate?: () => void;
   feeCalculation?: any;
 }) {
   if (!student) return null;
@@ -293,6 +295,11 @@ export function StudentDetailModal({
         ) : null}
 
         <div className="grid grid-cols-2 gap-2 [&>button]:h-12 sm:flex sm:flex-wrap sm:[&>button]:h-10">
+          {onNoDuesCertificate && Number(feeCalculation?.dueFee ?? student.dueFee ?? 0) === 0 ? (
+            <button type="button" onClick={onNoDuesCertificate} className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-200 px-3 py-2 text-sm font-medium text-emerald-600 transition-colors hover:bg-emerald-50 sm:w-auto dark:border-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/10">
+              <FileTextIcon className="h-4 w-4" /> No Dues Certificate
+            </button>
+          ) : null}
           {onPay ? (
             <button
               type="button"

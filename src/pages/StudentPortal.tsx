@@ -31,6 +31,7 @@ import { Modal } from "../components/ui/Modal";
 import { StudentDetailModal } from "../components/students/StudentDetailModal";
 import { StudentPaymentHistoryModal } from "../components/students/StudentPaymentHistoryModal";
 import { ReceiptModal } from "../components/shared/ReceiptModal";
+import { NoDuesCertificateModal } from "../components/shared/NoDuesCertificateModal";
 import { StudentChatbot } from "../components/portal/StudentChatbot";
 import { useData } from "../contexts/DataContext";
 import { useTheme } from "../contexts/ThemeContext";
@@ -70,6 +71,7 @@ export function StudentPortal() {
   });
   const [feeCalculation, setFeeCalculation] = useState<any | null>(null);
   const [paymentLumpSumPreview, setPaymentLumpSumPreview] = useState<any | null>(null);
+  const [certificateOpen, setCertificateOpen] = useState(false);
   const [searchOtp, setSearchOtp] = useState<string[]>(Array(6).fill(""));
   const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
   const searchOtpRefs = useRef<Array<HTMLInputElement | null>>([]);
@@ -416,6 +418,7 @@ export function StudentPortal() {
         }}
         feeCalculation={feeCalculation}
         onPay={Number(selectedStudentDetail?.dueFee ?? 0) > 0 ? openPaymentModal : undefined}
+        onNoDuesCertificate={() => setCertificateOpen(true)}
         onViewHistory={() => setHistoryOpen(true)}
         onViewReceipt={() => undefined}
       />
@@ -432,6 +435,7 @@ export function StudentPortal() {
         student={selectedStudentDetail ? mapPortalReceiptStudent(selectedStudentDetail) : null}
         onClose={() => setReceipt(null)}
       />
+      <NoDuesCertificateModal student={selectedStudentDetail} open={certificateOpen} onClose={() => setCertificateOpen(false)} />
 
       <StudentChatbot />
 

@@ -11,6 +11,7 @@ import { Field, Input, Select, Textarea } from '../../components/ui/Input';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { PaymentModal } from '../../components/shared/PaymentModal';
 import { ReceiptModal } from '../../components/shared/ReceiptModal';
+import { NoDuesCertificateModal } from '../../components/shared/NoDuesCertificateModal';
 import { StudentDetailModal } from '../../components/students/StudentDetailModal';
 import { StudentPaymentHistoryModal } from '../../components/students/StudentPaymentHistoryModal';
 import { StudentFormModal } from '../../components/shared/StudentFormModal';
@@ -55,6 +56,7 @@ export function StudentDetailsPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [waiverDeletePayload, setWaiverDeletePayload] = useState<LateFeeWaiverDeletePayload | null>(null);
   const [waiverDeleteAmount, setWaiverDeleteAmount] = useState('');
+  const [certificateOpen, setCertificateOpen] = useState(false);
 
   const loadStudent = useCallback(async () => {
     if (!id) return;
@@ -234,6 +236,8 @@ export function StudentDetailsPage() {
                 payableLateFee: Number(waiver.payableLateFee ?? 0),
               });
             } : undefined}
+            onNoDuesCertificate={() => setCertificateOpen(true)}
+            feeCalculation={feeCalculation}
           />
         ) : (
           <p className="py-16 text-center text-sm text-slate-500">Student not found.</p>
@@ -359,6 +363,7 @@ export function StudentDetailsPage() {
       <PaymentModal student={student} open={paying} onClose={() => setPaying(false)} onDone={setReceipt} />
       <StudentPaymentHistoryModal student={student} open={historyOpen} onClose={() => setHistoryOpen(false)} onViewReceipt={setReceipt} />
       <ReceiptModal payment={receipt} student={student} onClose={() => setReceipt(null)} />
+      <NoDuesCertificateModal student={student} open={certificateOpen} onClose={() => setCertificateOpen(false)} />
       <StudentFormModal
         open={editOpen}
         onClose={() => {
