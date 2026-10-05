@@ -21,6 +21,7 @@ import { DashboardLayout } from './components/layout/DashboardLayout';
 import type { NavItem } from './components/layout/Sidebar';
 
 import { StudentPortal } from './pages/StudentPortal';
+import { PublicPolicies } from './pages/PublicPolicies';
 import { Login } from './pages/Login';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { ReceptionistsPage } from './pages/admin/ReceptionistsPage';
@@ -62,6 +63,7 @@ export function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<StudentPortal />} />
+                <Route path="/policies" element={<PublicPolicies />} />
                 <Route path="/login" element={<Login />} />
 
               {/* Admin */}

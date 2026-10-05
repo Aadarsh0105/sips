@@ -33,6 +33,7 @@ import { StudentPaymentHistoryModal } from "../components/students/StudentPaymen
 import { ReceiptModal } from "../components/shared/ReceiptModal";
 import { NoDuesCertificateModal } from "../components/shared/NoDuesCertificateModal";
 import { StudentChatbot } from "../components/portal/StudentChatbot";
+import { PaymentPolicyModal } from "../components/portal/PaymentPolicyModal";
 import { useData } from "../contexts/DataContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { formatDate } from "../lib/utils";
@@ -549,6 +550,7 @@ function GenerateQrModal({ open, onClose, student, form, loading, onChangeForm, 
   lumpSumPreview: any;
   calculation: any;
 }) {
+  const [policyOpen, setPolicyOpen] = useState(false);
   if (!student) return null;
   const regularPayment = form.paymentType === "REGULAR";
   const monthOptions = getPortalMonthOptions(calculation);
@@ -652,8 +654,12 @@ function GenerateQrModal({ open, onClose, student, form, loading, onChangeForm, 
           />
           {regularPayment ? <p className="mt-1 text-xs text-slate-500">Maximum payable: ₹{selectedDue.toLocaleString("en-IN")}</p> : null}
         </Field>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
+          By continuing, you agree to the payment and refund terms. <button type="button" onClick={() => setPolicyOpen(true)} className="font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-300">View payment policy</button>
+        </div>
         <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-800/50 dark:text-slate-300">After generating the QR, you’ll see the payment code with the exact amount and can scan it to pay securely.</div>
       </div>
+      <PaymentPolicyModal open={policyOpen} onClose={() => setPolicyOpen(false)} />
     </Modal>
   );
 }
