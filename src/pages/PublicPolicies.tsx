@@ -49,24 +49,39 @@ export function PublicPolicies() {
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">4. OTP and account security</h2>
+            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">4. Refund Policy</h2>
+            <p className="mt-2 leading-7">Not applicable</p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">5. Return Policy</h2>
+            <p className="mt-2 leading-7">Not applicable</p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">6. Cancellation Policy</h2>
+            <p className="mt-2 leading-7">Not applicable</p>
+          </section>
+
+          <section>
+            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">7. OTP and account security</h2>
             <p className="mt-2 leading-7">Student details are released only after the required search OTP verification. Keep OTPs, QR IDs, transaction references, and payment links private. The school will not ask you to share an OTP with another person.</p>
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">5. Privacy policy</h2>
+            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">8. Privacy policy</h2>
             <p className="mt-2 leading-7">The portal may display and process student information such as name, student ID, class, contact details, fee details, payment status, and transaction references to provide student search and fee payment services.</p>
             <p className="mt-2 leading-7">Payment details are handled through authorised payment providers. The portal uses payment status and reference information to verify transactions, update fee details, and support payment enquiries. Complete card or banking credentials are not requested in the student portal.</p>
             <p className="mt-2 leading-7">Information may be retained as needed for fee records, payment reconciliation, security, support, and applicable school or legal requirements. Access is limited to authorised use of the school system.</p>
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">6. Third-party payment services</h2>
+            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">9. Third-party payment services</h2>
             <p className="mt-2 leading-7">When you open the payment provider page or scan the QR code, that provider’s terms, privacy policy, and security practices apply to the payment experience. Review the provider’s information before completing payment.</p>
           </section>
 
           <section>
-            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">7. Policy updates and support</h2>
+            <h2 className="font-display text-xl font-bold text-slate-900 dark:text-white">10. Policy updates and support</h2>
             <p className="mt-2 leading-7">These policies may be updated when the portal, payment process, or applicable requirements change. For questions about student records or a payment, contact the school office using the contact details shown on the student portal.</p>
           </section>
         </article>
